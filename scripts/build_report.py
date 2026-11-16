@@ -54,7 +54,7 @@ def setter(kind, lid):
 
 SEG_NAMES = {"off": "Офлайн-участники", "on": "Онлайн-участники", "none": "Не участвовали",
              "emp": "Сотрудники RoRe"}
-PROC_NAMES = {"new": "Взяли в работу («Новый лид»)", "active": "«Действующий лид»",
+PROC_NAMES = {"new": "Взяли в работу («Новый лид»)", "active": "«Действующий лид» (догрели)",
               "manual": "Отказ вручную", "auto": "Закрыты массово", "todo": "Не разобраны"}
 
 
@@ -110,6 +110,17 @@ for l in S["conf_leads"]:
     linked = {i for c in l["contacts"] for i in after_c.get(c, [])}
     if new:  # гостя взяли, а сделку на эту компанию завёл коллега
         linked |= {i for c in l["companies"] for i in after_co.get(c, [])}
+    prior = sorted({i for c in l["contacts"] for i in before_c.get(c, [])})
+    # Новый лид = сделка NewBiz создана ПОСЛЕ регистрации гостя (сделки в воронке конференции),
+    # гость не «Действующий лид» и у контакта не было сделок NewBiz до конференции.
+    nb_new, nb_warm, nb_early = [], [], []
+    for i in sorted(linked):
+        if nb_by_id[i]["created_at"] <= l["created_at"]:
+            nb_early.append(i)
+        elif reason == C.REASON_ACTIVE_LEAD or prior:
+            nb_warm.append(i)
+        else:
+            nb_new.append(i)
     view = val(cf, C.F_VIEW_PCT)
     try:
         view = float(view) if view is not None else None
@@ -119,20 +130,23 @@ for l in S["conf_leads"]:
         "id": l["id"], "seg": segment(cf), "stage": conf_st.get(str(l["status_id"]), str(l["status_id"])),
         "reason": reason, "proc": proc, "who": who,
         "mark_day": (ts - C.CONF_DATE_TS) // DAY if (ts and proc in ("new", "active", "manual")) else None,
-        "nb": sorted(linked), "nb_before": sorted({i for c in l["contacts"] for i in before_c.get(c, [])}),
+        "nb": nb_new, "warm": nb_warm, "early": nb_early, "nb_before": prior, "created": l["created_at"],
         "src": val(cf, C.F_SOURCE) or "Не указан",
         "reg": bool(cf.get(str(C.F_REGISTERED))), "appr": val(cf, C.F_APPROVED) or "",
         "ver": bool(cf.get(str(C.F_VERIFIED))), "ticket": bool(cf.get(str(C.F_TICKET))), "view": view,
-        "target": not (reason in C.NON_TARGET_REASONS),
+        "target": not (reason in C.NON_TARGET_REASONS or reason == C.REASON_ACTIVE_LEAD),
     })
 gby = {g["id"]: g for g in guests}
 
 # ---------------------------------------------------------------- сделки NewBiz
 deal_src = defaultdict(set)
+deal_kind = defaultdict(set)
 for g in guests:
     if g["seg"] != "emp":
-        for i in g["nb"]:
-            deal_src[i].add(g["id"])
+        for k in ("nb", "warm"):
+            for i in g[k]:
+                deal_src[i].add(g["id"])
+                deal_kind[i].add(k)
 
 
 def reached(n):
@@ -159,9 +173,11 @@ for i, gids in deal_src.items():
         "guests": sorted(gids), "segs": sorted({g["seg"] for g in gs}),
         "procs": sorted({g["proc"] for g in gs}), "srcs": sorted({g["src"] for g in gs}),
         "excluded": C.EXCLUDE_NB_COMPANY_IDS.get(comp),
+        "kind": "new" if "nb" in deal_kind[i] else "warm",
     })
 deals.sort(key=lambda d: (ORDER.get(d["stage"], 99), d["name"]))
-counted = [d for d in deals if not d["excluded"]]
+counted = [d for d in deals if not d["excluded"] and d["kind"] == "new"]
+warm_deals = [d for d in deals if not d["excluded"] and d["kind"] == "warm"]
 dby = {d["id"]: d for d in deals}
 
 # ---------------------------------------------------------------- метрики (для REPORT.md)
@@ -182,29 +198,22 @@ def at_least(ds, stage):
 def funnel(gs):
     reg = [g for g in gs if g["reg"]]
     ap = [g for g in reg if g["appr"] == "Офлайн"]
-    ver = [g for g in ap if g["ver"]]
-    tic = [g for g in ver if g["ticket"]]
     came = [g for g in gs if g["seg"] == "off"]
     tgt = [g for g in came if g["target"]]
-    done = [g for g in tgt if g["proc"] != "todo"]
-    sel = [g for g in tgt if g["proc"] in ("new", "active")]
+    took = [g for g in tgt if g["proc"] == "new"]
     ds = [dby[i] for i in gdeals(came)]
-    steps = [
+    return [
         ("Зарегистрировались", len(reg), "гостей"),
         ("Одобрен офлайн-формат", len(ap), "гостей"),
-        ("Прошли верификацию", len(ver), "гостей"),
-        ("Получили билет", len(tic), "гостей"),
         ("Пришли офлайн", len(came), "гостей"),
-        ("Целевые (не клиенты/партнёры/PR)", len(tgt), "гостей"),
-        ("Разобраны NewBiz", len(done), "гостей"),
-        ("Отобраны в работу", len(sel), "гостей"),
-        ("Сделка в NewBiz", len(ds), "сделок"),
+        ("Целевые (новые для нас компании)", len(tgt), "гостей"),
+        ("Взяли в работу («Новый лид»)", len(took), "гостей"),
+        ("Новая сделка в NewBiz", len(ds), "сделок"),
         ("Дальше «Исследования»", len(at_least(ds, "Таргет")), "сделок"),
         ("Встреча назначена и дальше", len(at_least(ds, "Встреча назначена")), "сделок"),
         ("Участие в тендере и дальше", len(at_least(ds, "Участие в тендере")), "сделок"),
         ("Выигрыш / контракт", len(at_least(ds, "Выигрыш тендера")), "сделок"),
     ]
-    return steps
 
 
 steps = funnel(ext)
@@ -212,7 +221,7 @@ src_rows = []
 for src, cnt in Counter(g["src"] for g in ext).most_common():
     gs = [g for g in ext if g["src"] == src]
     came = [g for g in gs if g["seg"] == "off"]
-    sel = [g for g in came if g["proc"] in ("new", "active")]
+    sel = [g for g in came if g["proc"] == "new"]
     ds = gdeals(gs)
     src_rows.append((src, cnt, len(came), len(sel), len(ds)))
 
@@ -239,11 +248,13 @@ w("## Коротко")
 w("")
 w(f"- Офлайн пришли **{len(off)}** гостей (без сотрудников); явка от одобренных на офлайн — "
   f"**{pct(len(off_came), len(off_ap))}**.")
-w(f"- Разобрано NewBiz **{len(off) - proc_off['todo']}** из {len(off)}, **не разобрано {proc_off['todo']}**.")
-w(f"- Сделок в NewBiz: **{len(counted)}**; от офлайн-гостей — {steps[8][1]} "
-  f"(**{pct(steps[8][1], len(off))}** от пришедших, **{pct(steps[8][1], steps[7][1])}** от отобранных).")
-w(f"- Дальше «Исследования» дошли **{steps[9][1]}** сделок, до встречи — **{steps[10][1]}**, "
-  f"до тендера — **{steps[11][1]}**, выигрыш/контракт — **{steps[12][1]}**; отказ/проигрыш сейчас — {lost}.")
+w(f"- Взяли в работу («Новый лид») **{proc_off['new']}** офлайн-гостей; **не разобрано {proc_off['todo']}**.")
+w(f"- Новых сделок в NewBiz: **{len(counted)}**; от офлайн-гостей — {steps[5][1]} "
+  f"(**{pct(steps[5][1], len(off))}** от пришедших, **{pct(steps[5][1], steps[4][1])}** от взятых в работу).")
+w(f"- Дальше «Исследования» дошли **{steps[6][1]}** новых сделок, до встречи — **{steps[7][1]}**, "
+  f"до тендера — **{steps[8][1]}**, выигрыш/контракт — **{steps[9][1]}**; отказ/проигрыш сейчас — {lost}.")
+w(f"- Отдельно, не в конверсии: догрели **{len(warm_deals)}** действующих сделок NewBiz "
+  f"(«Действующий лид» или сделка с контактом была до конференции).")
 w(f"- Скорость: медиана **{med(mark_days)}** дн. от конференции до разметки гостя и **{med(deal_days)}** дн. "
   "до создания сделки.")
 w("")
@@ -287,17 +298,18 @@ for k in ("new", "active", "manual", "auto", "todo"):
 w("")
 w("### По сотрудникам")
 w("")
-w("| Сотрудник | Разобрал | Отобрал | Сделок NewBiz | Дальше «Исследования» | Отобран → сделка |")
+w("| Сотрудник | Взял («Новый лид») | Новых сделок | Дальше «Исследования» | Взят → сделка | Догрел действующих |")
 w("|---|---:|---:|---:|---:|---:|")
 people = defaultdict(list)
 for g in ext:
     if g["who"] and g["proc"] in ("new", "active", "manual"):
         people[g["who"]].append(g)
 for p, gs in sorted(people.items(), key=lambda x: -len(x[1])):
-    sel = [g for g in gs if g["proc"] in ("new", "active")]
-    ds = [dby[i] for i in gdeals(sel)]
-    wd = [g for g in sel if any(not excluded(i) for i in g["nb"])]
-    w(f"| {p} | {len(gs)} | {len(sel)} | {len(ds)} | {len(at_least(ds, 'Таргет'))} | {pct(len(wd), len(sel))} |")
+    took = [g for g in gs if g["proc"] == "new"]
+    ds = [dby[i] for i in gdeals(took)]
+    wd = [g for g in took if any(not excluded(i) for i in g["nb"])]
+    warm = sum(1 for g in gs if g["proc"] == "active")
+    w(f"| {p} | {len(took)} | {len(ds)} | {len(at_least(ds, 'Таргет'))} | {pct(len(wd), len(took))} | {warm} |")
 w("")
 w("## 5. Сделки NewBiz")
 w("")
@@ -314,24 +326,43 @@ w(f"Бюджет в сделках: **{budget:,} ₽**, в выигранных 
   + f"Бюджет заполнен в {sum(1 for d in counted if d['budget'])} из {len(counted)} сделок, "
   f"вероятность — в {sum(1 for d in counted if d['prob'] is not None)}.")
 w("")
-w("| Сделка | Этап | Дошла до | Ответственный | Создана | Гости |")
-w("|---|---|---|---|---|---|")
+w("| Сделка | Тип | Этап | Дошла до | Ответственный | Создана | Гости |")
+w("|---|---|---|---|---|---|---|")
 for d in deals:
     mark = " ⚑" if d["excluded"] else ""
     gl = ", ".join(f"[{g}]({AMO}{g})" for g in d["guests"])
-    w(f"| [{d['name']}]({AMO}{d['id']}){mark} | {d['stage']} | {d['reached']} | {d['resp']} | {d['created']} | {gl} |")
+    kind = "новая" if d["kind"] == "new" else "догрели"
+    w(f"| [{d['name']}]({AMO}{d['id']}){mark} | {kind} | {d['stage']} | {d['reached']} | {d['resp']} | {d['created']} | {gl} |")
 w("")
 if any(d["excluded"] for d in deals):
     w("⚑ — не в конверсии: " + "; ".join(sorted(set(C.EXCLUDE_NB_COMPANY_IDS.values()))) + ".")
     w("")
+w("## Проверка: сделка NewBiz появилась после регистрации?")
+w("")
+links = [(g, i) for g in ext for k in ("nb", "warm", "early") for i in g[k] if not excluded(i)]
+early = [(g, i) for g in ext for i in g["early"] if not excluded(i)]
+w(f"Всего связей «гость → сделка NewBiz после конференции»: **{len(links)}**. "
+  f"Сделка создана позже регистрации гостя в «Конференции 2026»: **{len(links) - len(early)}**; раньше: **{len(early)}**.")
+if early:
+    w("")
+    w("Сделка NewBiz создана раньше регистрации — такие связи в конверсию не входят:")
+    for g, i in early:
+        w(f"- гость [{g['id']}]({AMO}{g['id']}) (регистрация {day(g['created'])}) → "
+          f"[{nb_by_id[i]['name']}]({AMO}{i}) ({day(nb_by_id[i]['created_at'])})")
+new_with_prior = [g for g in ext if g["proc"] == "new" and g["nb_before"]]
+if new_with_prior:
+    w("")
+    w(f"Отмечены «Новый лид», но у контакта была сделка NewBiz до конференции — посчитаны как «догрели»: "
+      + ", ".join(f"[{g['id']}]({AMO}{g['id']})" for g in new_with_prior) + ".")
+w("")
 w("## Что проверить")
 w("")
 w(f"- Не разобраны: **{proc_off['todo']}** офлайн-гостей.")
-al_none = [g for g in off if g["proc"] == "active" and not g["nb"] and not g["nb_before"]]
+al_none = [g for g in off if g["proc"] == "active" and not g["warm"] and not g["nb"] and not g["nb_before"]]
 if al_none:
     w("- «Действующий лид», но сделки в NewBiz нет ни до, ни после конференции: "
       + ", ".join(f"[{g['id']}]({AMO}{g['id']})" for g in al_none) + ".")
-new_none = [g for g in off if g["proc"] == "new" and not g["nb"]]
+new_none = [g for g in off if g["proc"] == "new" and not g["nb"] and not g["warm"] and not g["early"]]
 if new_none:
     w("- «Новый лид», но сделка в NewBiz не найдена: "
       + ", ".join(f"[{g['id']}]({AMO}{g['id']})" for g in new_none) + ".")
@@ -346,13 +377,13 @@ w("Обновляется GitHub Actions раз в сутки и по кнопк
 (ROOT / "REPORT.md").write_text("\n".join(md) + "\n", encoding="utf-8")
 
 # ---------------------------------------------------------------- docs/index.html
-G_KEYS = ["id", "seg", "proc", "reason", "who", "nb", "src", "reg", "appr", "ver", "ticket", "view",
+G_KEYS = ["id", "seg", "proc", "reason", "who", "nb", "warm", "src", "reg", "appr", "view",
           "target", "mark_day"]
 payload = {
     "generated": gen, "amo": AMO, "segNames": SEG_NAMES, "procNames": PROC_NAMES,
     "stageOrder": C.NB_STAGE_ORDER, "lost": sorted(C.NB_LOST), "empCount": seg_cnt["emp"],
     "gKeys": G_KEYS,
-    "guests": [[g[k] if k != "nb" else [i for i in g["nb"] if not excluded(i)] for k in G_KEYS]
+    "guests": [[[i for i in g[k] if not excluded(i)] if k in ("nb", "warm") else g[k] for k in G_KEYS]
                for g in ext],
     "deals": deals,
 }
@@ -360,4 +391,4 @@ tpl = (ROOT / "scripts" / "template.html").read_text(encoding="utf-8")
 data = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 (ROOT / "docs").mkdir(exist_ok=True)
 (ROOT / "docs" / "index.html").write_text(tpl.replace("/*__DATA__*/null", data), encoding="utf-8")
-print(f"OK: гостей {len(guests)}, офлайн {len(off)}, сделок {len(counted)} (+{len(deals) - len(counted)} искл.)")
+print(f"OK: гостей {len(guests)}, офлайн {len(off)}, новых сделок {len(counted)}, догрели {len(warm_deals)}")

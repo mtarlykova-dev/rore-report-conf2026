@@ -123,8 +123,9 @@ footer{color:var(--ink-3);font-size:12px;text-align:center;padding:10px 0 30px}
     </div>
     <div class="card">
       <h2>Как отработаны офлайн-гости</h2>
-      <p class="cap">Серым — массовая разметка и неразобранные.</p>
+      <p class="cap">Серым — не конверсия: догретые действующие лиды, массовая разметка и неразобранные.</p>
       <div class="bars" id="procBars"></div>
+      <div class="note" id="warmNote"></div>
       <h2 style="margin-top:22px;font-size:16px">Причины отказа</h2>
       <div class="bars" id="reasonBars" style="margin-top:10px"></div>
     </div>
@@ -167,6 +168,7 @@ footer{color:var(--ink-3);font-size:12px;text-align:center;padding:10px 0 30px}
     <div class="toolbar">
       <input type="search" id="q" placeholder="Поиск: сделка, компания, ответственный" size="38">
       <select id="fStage"></select>
+      <label style="font-size:13px;color:var(--ink-2)"><input type="checkbox" id="fWarm"> показать догретые действующие</label>
       <label style="font-size:13px;color:var(--ink-2)"><input type="checkbox" id="fExcl"> показать исключённые</label>
     </div>
     <table id="dealTbl"></table>
@@ -210,7 +212,8 @@ function bars(el, rows, total, cls) {
       <div class="c">${fmt(v)}<small>${pct(v,total)}</small></div></div>`).join('') || '<div class="note">Нет данных</div>';
 }
 const dealsOf = gs => [...new Set(gs.flatMap(g => g.nb))].map(i => DL[i]).filter(Boolean);
-const isSel = g => g.proc === 'new' || g.proc === 'active';
+const isSel = g => g.proc === 'new';
+const warmOf = gs => [...new Set(gs.flatMap(g => g.warm))].map(i => DL[i]).filter(Boolean);
 
 let sortKey='stage', sortDir=1;
 function render() {
@@ -227,20 +230,19 @@ function render() {
 
   $('tiles').innerHTML = [
     [fmt(off.length), pct(came.length, apOff.length), 'Пришли офлайн', 'явка от одобренных на офлайн', 1],
-    [fmt(off.length - pc('todo')), pct(off.length - pc('todo'), off.length), 'Разобрано', fmt(pc('todo')) + ' ещё не разобраны'],
-    [fmt(sel.length), pct(sel.length, off.length), 'Отобрано в работу', '«Новый лид» + «Действующий лид»'],
-    [fmt(offDeals.length), pct(offDeals.length, sel.length), 'Сделок в NewBiz', 'от отобранных · с неучастниками ' + allDeals.length],
+    [fmt(pc('todo')), pct(pc('todo'), off.length), 'Не разобрано', 'нет ни отметки, ни причины отказа'],
+    [fmt(sel.length), pct(sel.length, off.length), 'Взяли в работу', 'отметка «Новый лид»'],
+    [fmt(offDeals.length), pct(offDeals.length, sel.length), 'Новых сделок в NewBiz', 'от взятых в работу · с неучастниками ' + allDeals.length],
     [fmt(adv), pct(adv, offDeals.length), 'Дальше «Исследования»', 'от сделок офлайн-гостей'],
     [md == null ? '—' : Math.round(md), '', 'Дней до сделки', 'медиана: от конференции до создания'],
   ].map(([v,p,l,s,dark]) => `<div class="tile${dark?' dark':''}"><div class="v">${v}${p?`<small>${p}</small>`:''}</div><div class="l">${l}</div><div class="s">${s}</div></div>`).join('');
 
-  const reg = gs.filter(g => g.reg), ap = reg.filter(g => g.appr === 'Офлайн'), ver = ap.filter(g => g.ver), tic = ver.filter(g => g.ticket);
-  const tgt = off.filter(g => g.target), done = tgt.filter(g => g.proc !== 'todo'), sl = tgt.filter(isSel);
+  const reg = gs.filter(g => g.reg), ap = reg.filter(g => g.appr === 'Офлайн');
+  const tgt = off.filter(g => g.target), sl = tgt.filter(isSel);
   const steps = [
-    ['Зарегистрировались', reg.length], ['Одобрен офлайн-формат', ap.length], ['Прошли верификацию', ver.length],
-    ['Получили билет', tic.length], ['Пришли офлайн', off.length], ['Целевые (не клиенты/партнёры/PR)', tgt.length],
-    ['Разобраны NewBiz', done.length], ['Отобраны в работу', sl.length],
-    ['Сделка в NewBiz', offDeals.length, 1], ['Дальше «Исследования»', adv, 1],
+    ['Зарегистрировались', reg.length], ['Одобрен офлайн-формат', ap.length], ['Пришли офлайн', off.length],
+    ['Целевые (новые для нас компании)', tgt.length], ['Взяли в работу («Новый лид»)', sl.length],
+    ['Новая сделка в NewBiz', offDeals.length, 1], ['Дальше «Исследования»', adv, 1],
     ['Встреча назначена и дальше', atLeast(offDeals,'Встреча назначена').length, 1],
     ['Участие в тендере и дальше', atLeast(offDeals,'Участие в тендере').length, 1],
     ['Выигрыш / контракт', atLeast(offDeals,'Выигрыш тендера').length, 1],
@@ -260,7 +262,9 @@ function render() {
   bars($('viewBars'), [['Смотрели до 25%', vv.filter(v => v < 25).length], ['25–49%', vv.filter(v => v >= 25 && v < 50).length],
               ['50–74%', vv.filter(v => v >= 50 && v < 75).length], ['75–100%', vv.filter(v => v >= 75).length]], vv.length);
 
-  bars($('procBars'), ['new','active','manual','auto','todo'].map(k => [D.procNames[k], pc(k), (k==='auto'||k==='todo')?'m':'']), off.length);
+  bars($('procBars'), ['new','active','manual','auto','todo'].map(k => [D.procNames[k], pc(k), (k==='auto'||k==='todo'||k==='active')?'m':'']), off.length);
+  const wd = warmOf(gs).filter(d => !d.excluded);
+  $('warmNote').textContent = `Догрели действующих лидов: ${pc('active')} гостей с причиной «Действующий лид», ${wd.length} сделок NewBiz, которые существовали до конференции. В конверсию не входят.`;
   const rc = {}; off.filter(g => g.reason).forEach(g => rc[g.reason] = (rc[g.reason]||0)+1);
   bars($('reasonBars'), Object.entries(rc).sort((a,b) => b[1]-a[1]), off.length);
 
@@ -269,7 +273,7 @@ function render() {
     return {s, n:a.length, came:o.length, sel:o.filter(isSel).length, deals:ds.length, adv:atLeast(ds,'Таргет').length}; })
     .sort((a,b) => b.deals-a.deals || b.n-a.n);
   const maxConv = Math.max(0.0001, ...srcRows.map(r => r.deals / r.n));
-  $('srcTbl').innerHTML = '<tr><th>Источник</th><th class="num">Гостей</th><th class="num">Пришли офлайн</th><th class="num">Отобраны</th><th class="num">Сделок NewBiz</th><th class="num">Дальше «Иссл.»</th><th class="num">Гость → сделка</th></tr>' +
+  $('srcTbl').innerHTML = '<tr><th>Источник</th><th class="num">Гостей</th><th class="num">Пришли офлайн</th><th class="num">Взяли в работу</th><th class="num">Новых сделок</th><th class="num">Дальше «Иссл.»</th><th class="num">Гость → сделка</th></tr>' +
     srcRows.map(r => `<tr${src && r.s===src ? ' style="background:var(--track)"':''}><td>${esc(r.s)}</td><td class="num">${fmt(r.n)}</td>
       <td class="num">${fmt(r.came)} <span style="color:var(--ink-3)">${pct(r.came, r.n)}</span></td><td class="num">${fmt(r.sel)}</td>
       <td class="num"><b>${fmt(r.deals)}</b></td><td class="num">${fmt(r.adv)}</td>
@@ -299,16 +303,17 @@ function render() {
   $('weeks').innerHTML = svg + '</svg>';
 
   const P = {}; G.filter(g => g.who && (!src || g.src === src)).forEach(g => (P[g.who] = P[g.who] || []).push(g));
-  $('whoTbl').innerHTML = '<tr><th>Сотрудник</th><th class="num">Разобрал</th><th class="num">Отобрал</th><th class="num">Отказал</th><th class="num">Сделок NewBiz</th><th class="num">Дальше «Иссл.»</th><th class="num">Отобран → сделка</th><th class="num">Дней до разметки</th></tr>' +
+  $('whoTbl').innerHTML = '<tr><th>Сотрудник</th><th class="num">Взял («Новый лид»)</th><th class="num">Отказал</th><th class="num">Новых сделок</th><th class="num">Дальше «Иссл.»</th><th class="num">Взят → сделка</th><th class="num">Догрел действующих</th><th class="num">Дней до разметки</th></tr>' +
     (Object.entries(P).sort((a,b) => b[1].length - a[1].length).map(([n, a]) => { const s = a.filter(isSel);
       const ds = dealsOf(s), wd = s.filter(g => g.nb.length).length, m = median(a.map(g => g.mark_day).filter(x => x != null));
-      return `<tr${who===n?' style="background:var(--track)"':''}><td>${esc(n)}</td><td class="num">${a.length}</td><td class="num">${s.length}</td><td class="num">${a.filter(g=>g.proc==='manual').length}</td>
-        <td class="num"><b>${ds.length}</b></td><td class="num">${atLeast(ds,'Таргет').length}</td><td class="num">${pct(wd, s.length)}</td><td class="num">${m==null?'—':Math.round(m)}</td></tr>`; }).join('')
+      return `<tr${who===n?' style="background:var(--track)"':''}><td>${esc(n)}</td><td class="num">${s.length}</td><td class="num">${a.filter(g=>g.proc==='manual').length}</td>
+        <td class="num"><b>${ds.length}</b></td><td class="num">${atLeast(ds,'Таргет').length}</td><td class="num">${pct(wd, s.length)}</td><td class="num">${a.filter(g=>g.proc==='active').length}</td><td class="num">${m==null?'—':Math.round(m)}</td></tr>`; }).join('')
     || '<tr><td colspan="8" style="color:var(--ink-3)">Ручной разметки нет</td></tr>');
 
   const q = $('q').value.trim().toLowerCase(), st = $('fStage').value, showEx = $('fExcl').checked;
-  const gIds = new Set(gs.map(g => g.id)), ids = new Set(allDeals.map(d => d.id));
-  let rows = D.deals.filter(d => d.excluded ? (showEx && d.guests.some(x => gIds.has(x))) : ids.has(d.id));
+  const showWarm = $('fWarm').checked;
+  const gIds = new Set(gs.map(g => g.id)), ids = new Set(allDeals.map(d => d.id)), wIds = new Set(warmOf(gs).map(d => d.id));
+  let rows = D.deals.filter(d => d.excluded ? (showEx && d.guests.some(x => gIds.has(x))) : (ids.has(d.id) || (showWarm && wIds.has(d.id))));
   if (st) rows = rows.filter(d => d.stage === st);
   if (q) rows = rows.filter(d => (d.name+' '+d.resp+' '+d.company+' '+d.agency).toLowerCase().includes(q));
   const key = {stage: d => ORDER[d.stage] ?? 99, reached: d => ORDER[d.reached] ?? 0, name: d => d.name.toLowerCase(), resp: d => d.resp||'',
@@ -319,16 +324,16 @@ function render() {
     <th data-k="resp">Ответственный${ar('resp')}</th><th data-k="created">Создана${ar('created')}</th><th data-k="budget" class="num">Бюджет${ar('budget')}</th><th>Гости · источник</th></tr>` +
     rows.map(d => `<tr class="${d.excluded?'excl':''}" ${d.excluded?`data-tip="${esc(d.excluded)}"`:''}>
       <td><a href="${D.amo}${d.id}" target="_blank">${esc(d.name)}</a>${d.company||d.agency?`<br><small style="color:var(--ink-3)">${esc(d.company)}${d.company&&d.agency?' · ':''}${esc(d.agency)}</small>`:''}</td>
-      <td>${esc(d.stage)}</td><td>${esc(d.reached)}</td><td>${esc(d.resp)}</td><td class="nw">${d.created}</td>
+      <td>${esc(d.stage)}${d.kind==='warm'?'<br><span class="pill">догрели</span>':''}</td><td>${esc(d.reached)}</td><td>${esc(d.resp)}</td><td class="nw">${d.created}</td>
       <td class="num">${d.budget ? fmt(d.budget)+' ₽' : '—'}</td>
       <td>${d.guests.map(g => `<a class="pill" href="${D.amo}${g}" target="_blank">${g}</a>`).join('')}${d.srcs.map(s => `<span class="pill g">${esc(s)}</span>`).join('')}</td></tr>`).join('');
   $('dealTbl').querySelectorAll('th[data-k]').forEach(th => th.onclick = () => { const k = th.dataset.k; sortDir = sortKey===k ? -sortDir : 1; sortKey = k; render(); });
-  const bud = rows.filter(d => !d.excluded).reduce((s,d) => s + (d.budget||0), 0);
-  $('dealNote').textContent = `${rows.length} сделок · бюджет ${fmt(bud)} ₽ (заполнен в ${rows.filter(d=>d.budget).length}). Связь: сделка NewBiz создана после конференции и у неё тот же контакт, что у гостя (для «Новый лид» — или та же компания).`;
+  const bud = rows.filter(d => !d.excluded && d.kind==='new').reduce((s,d) => s + (d.budget||0), 0);
+  $('dealNote').textContent = `${rows.length} сделок · бюджет ${fmt(bud)} ₽ (заполнен в ${rows.filter(d=>d.budget).length}). Новая сделка: создана в NewBiz позже регистрации гостя, тот же контакт (для «Новый лид» — или компания), у контакта не было сделок NewBiz до конференции и гость не «Действующий лид».`;
 }
-['fSrc','fWho','fStage','fExcl'].forEach(id => $(id).onchange = render);
+['fSrc','fWho','fStage','fExcl','fWarm'].forEach(id => $(id).onchange = render);
 $('q').oninput = render;
-$('reset').onclick = () => { ['fSrc','fWho','fStage'].forEach(id => $(id).value=''); $('q').value=''; $('fExcl').checked=false; render(); };
+$('reset').onclick = () => { ['fSrc','fWho','fStage'].forEach(id => $(id).value=''); $('q').value=''; $('fExcl').checked=false; $('fWarm').checked=false; render(); };
 render();
 </script>
 </body>
