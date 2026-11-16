@@ -87,14 +87,30 @@ def leads(pipeline_id):
 
 
 def last_setter(field_id, lead_ids):
-    """Кто последним менял поле сделки → {lead_id: user_id}."""
-    out, ts = {}, {}
+    """Кто и когда последним менял поле сделки → {lead_id: [user_id, ts]}."""
+    out = {}
     params = {"filter[type]": f"custom_field_{field_id}_value_changed", "filter[entity]": "lead",
               "filter[created_at][from]": C.CONF_DATE_TS}
     for e in paged("/api/v4/events", "events", params, limit=100):
         lid = e["entity_id"]
-        if lid in lead_ids and e["created_at"] >= ts.get(lid, 0):
-            out[lid], ts[lid] = e["created_by"], e["created_at"]
+        if lid in lead_ids and e["created_at"] >= out.get(lid, [0, 0])[1]:
+            out[lid] = [e["created_by"], e["created_at"]]
+    return out
+
+
+def status_history(lead_ids):
+    """История смены этапов → {lead_id: [[ts, status_id_after], ...]}."""
+    out = {}
+    ids = sorted(lead_ids)
+    for i in range(0, len(ids), 10):
+        params = {"filter[type]": "lead_status_changed", "filter[entity]": "lead"}
+        for k, lid in enumerate(ids[i:i + 10]):
+            params[f"filter[entity_id][{k}]"] = lid
+        for e in paged("/api/v4/events", "events", params, limit=100):
+            st = e["value_after"][0]["lead_status"]["id"]
+            out.setdefault(e["entity_id"], []).append([e["created_at"], st])
+    for v in out.values():
+        v.sort()
     return out
 
 
@@ -115,6 +131,9 @@ def main():
     print("События по полям «Причина отказа» и «Новый лид»…")
     setters = {"reason": last_setter(C.F_REASON, ids), "new_lead": last_setter(C.F_NEW_LEAD, ids)}
 
+    print("История этапов сделок NewBiz после конференции…")
+    history = status_history({n["id"] for n in nb if n["created_at"] > C.CONF_DATE_TS})
+
     comp_ids = sorted({c for l in nb for c in l["companies"]})
     companies = {}
     for i in range(0, len(comp_ids), 50):
@@ -130,6 +149,7 @@ def main():
         "companies": {str(k): v for k, v in companies.items()},
         "conf_leads": conf, "nb_leads": nb,
         "setters": {k: {str(l): u for l, u in v.items()} for k, v in setters.items()},
+        "nb_history": {str(k): v for k, v in history.items()},
     }
     (ROOT / "data").mkdir(exist_ok=True)
     (ROOT / "data" / "snapshot.json").write_text(json.dumps(snap, ensure_ascii=False), encoding="utf-8")

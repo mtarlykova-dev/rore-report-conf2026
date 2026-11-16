@@ -3,187 +3,332 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Конференция 2026 → NewBiz</title>
+<title>Конференция 2026 → NewBiz · RoRe group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-.viz-root{color-scheme:light;--surface-0:#f4f3f0;--surface-1:#fcfcfb;--border:#e3e2dd;--grid:#ecebe7;
-  --text-primary:#0b0b0b;--text-secondary:#52514e;--text-muted:#7a7974;--series-1:#2a78d6;--muted-bar:#b9b8b2;
-  --accent-bg:#eaf2fc}
-@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])) .viz-root{color-scheme:dark;
-  --surface-0:#111110;--surface-1:#1a1a19;--border:#2e2e2b;--grid:#262624;--text-primary:#f0efec;
-  --text-secondary:#c3c2b7;--text-muted:#8f8e87;--series-1:#3987e5;--muted-bar:#55554f;--accent-bg:#17283d}}
+:root{color-scheme:light;
+  --ink:#000;--ink-2:#525252;--ink-3:#8a8986;--bg:#f2f1ee;--card:#fff;--line:#e7e5e0;--track:#f1efea;
+  --gold:#bd9866;--gold-ink:#9a7646;--mark:#a88252;--muted:#d6d2ca;--black:#000}
 *{box-sizing:border-box}
-body{margin:0;font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-.viz-root{background:var(--surface-0);color:var(--text-primary);min-height:100vh;padding:24px}
-.wrap{max-width:1180px;margin:0 auto}
-h1{font-size:22px;margin:0 0 4px}
-h2{font-size:16px;margin:0 0 12px}
-.sub{color:var(--text-secondary);margin-bottom:20px}
-.filters{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:20px}
-.filters label{color:var(--text-secondary);font-size:13px}
-select,input{font:inherit;color:var(--text-primary);background:var(--surface-1);border:1px solid var(--border);
-  border-radius:8px;padding:6px 10px}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px}
-.tile,.card{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:16px}
-.tile .v{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}
-.tile .l{color:var(--text-secondary);font-size:13px}
-.tile .s{color:var(--text-muted);font-size:12px;margin-top:2px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-@media (max-width:860px){.grid2{grid-template-columns:1fr}}
-.bars{display:flex;flex-direction:column;gap:6px}
-.bar{display:grid;grid-template-columns:200px 1fr 96px;gap:10px;align-items:center;padding:3px 0;border-radius:6px}
-.bar:hover{background:var(--accent-bg)}
-.bar .n{color:var(--text-secondary);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bar .t{height:14px;background:var(--grid);border-radius:0 4px 4px 0}
-.bar .f{height:14px;background:var(--series-1);border-radius:0 4px 4px 0;min-width:2px}
-.bar .f.m{background:var(--muted-bar)}
-.bar .c{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;font-size:13px}
-.bar .c small{color:var(--text-muted)}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--grid);vertical-align:top}
-th{color:var(--text-secondary);font-weight:500;cursor:pointer;user-select:none;white-space:nowrap}
-td.num,th.num{text-align:right;white-space:nowrap;}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Circe,Manrope,Arial,sans-serif;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:96px 96px;background-attachment:fixed}
+header{background:var(--black);color:#fff}
+.hwrap{max-width:1240px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;gap:20px}
+.logo{height:46px;display:block}
+.hwrap .sp{flex:1}
+.chip{border:1px solid var(--gold);border-radius:20px;padding:7px 16px;font-size:13px;color:#fff;white-space:nowrap}
+.wrap{max-width:1240px;margin:0 auto;padding:36px 28px 60px}
+h1{font-size:40px;line-height:1.1;font-weight:800;margin:0 0 10px;letter-spacing:-.01em}
+h1 em{font-style:normal;color:var(--gold)}
+.lead{color:var(--ink-2);font-size:16px;max-width:760px;margin:0 0 26px}
+h2{font-size:20px;font-weight:800;margin:0 0 4px}
+.cap{color:var(--ink-3);font-size:13px;margin:0 0 18px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:22px}
+.filters label{font-size:13px;color:var(--ink-2);display:flex;gap:8px;align-items:center}
+select,input[type=search]{font:inherit;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:9px 14px;outline:none}
+select:focus,input:focus{border-color:var(--gold)}
+.btn{font:inherit;font-size:14px;background:var(--black);color:#fff;border:0;border-radius:12px;padding:10px 18px;cursor:pointer}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}
+.tile{background:var(--card);border-radius:24px;padding:20px 22px}
+.tile .v{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.tile .v small{font-size:16px;color:var(--gold-ink);font-weight:700;margin-left:6px}
+.tile .l{color:var(--ink);font-size:14px;margin-top:6px;font-weight:600}
+.tile .s{color:var(--ink-3);font-size:12px;margin-top:2px}
+.tile.dark{background:var(--black);color:#fff}.tile.dark .l{color:#fff}.tile.dark .s{color:#b5b3ad}.tile.dark .v small{color:var(--gold)}
+.card{background:var(--card);border-radius:24px;padding:24px 26px;margin-bottom:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}h1{font-size:30px}}
+.fn{display:grid;grid-template-columns:240px 1fr 120px 90px 90px;gap:12px;align-items:center;padding:6px 8px;border-radius:10px}
+.fn:hover{background:var(--track)}
+.fn .n{font-size:14px}
+.fn .t{height:22px;background:var(--track);border-radius:0 6px 6px 0}
+.fn .f{height:22px;background:var(--mark);border-radius:0 6px 6px 0}
+.fn.deal .f{background:var(--black)}
+.fn .c{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fn .p{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-2);font-size:13px}
+.fn .p b{color:var(--gold-ink);font-weight:700}
+.fn.head{font-size:12px;color:var(--ink-3);padding-bottom:0}
+.fn.head:hover{background:none}
+.divider{border-top:1px dashed var(--line);margin:8px 0}
+@media (max-width:760px){.fn{grid-template-columns:140px 1fr 70px 60px}.fn .p.r{display:none}}
+.bar{display:grid;grid-template-columns:210px 1fr 104px;gap:12px;align-items:center;padding:4px 6px;border-radius:8px}
+.bar:hover{background:var(--track)}
+.bar .n{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .t{height:14px;background:var(--track);border-radius:0 4px 4px 0}
+.bar .f{height:14px;background:var(--mark);border-radius:0 4px 4px 0;min-width:2px}
+.bar .f.m{background:var(--muted)}.bar .f.k{background:var(--black)}
+.bar .c{text-align:right;font-variant-numeric:tabular-nums;font-size:14px;white-space:nowrap;font-weight:600}
+.bar .c small{color:var(--ink-3);font-weight:400;margin-left:4px}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--ink-2);margin:-8px 0 12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--ink-3);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em;cursor:pointer;user-select:none;white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 td.nw{white-space:nowrap}
-td.num,th.num{font-variant-numeric:tabular-nums}
-a{color:var(--series-1);text-decoration:none}
-a:hover{text-decoration:underline}
-.pill{display:inline-block;padding:1px 8px;border-radius:999px;background:var(--grid);color:var(--text-secondary);font-size:12px;margin:1px 2px 1px 0}
-.note{color:var(--text-muted);font-size:12px;margin-top:10px}
-.excl{opacity:.6}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+td .mini{display:inline-block;height:6px;background:var(--mark);border-radius:0 3px 3px 0;vertical-align:middle;margin-left:8px}
+a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:3px}
+a:hover{color:var(--gold-ink)}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;border:1px solid var(--line);color:var(--ink-2);font-size:12px;margin:2px 4px 2px 0;text-decoration:none}
+a.pill:hover{border-color:var(--gold)}
+.pill.g{border-color:var(--gold);color:var(--gold-ink)}
+.excl{opacity:.5}
+.note{color:var(--ink-3);font-size:12px;margin-top:12px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.stat{border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.stat .v{font-size:26px;font-weight:800}.stat .v small{font-size:14px;color:var(--gold-ink);margin-left:6px}
+.stat .l{font-size:13px;color:var(--ink-2)}
+svg text{font-family:Circe,Manrope,Arial,sans-serif}
+#tip{position:fixed;pointer-events:none;background:var(--black);color:#fff;font-size:12px;padding:6px 10px;border-radius:8px;display:none;z-index:9;white-space:nowrap}
+footer{color:var(--ink-3);font-size:12px;text-align:center;padding:10px 0 30px}
 </style>
 </head>
 <body>
-<div class="viz-root"><div class="wrap">
-  <h1>Гости «Конференции 2026» → воронка NewBiz</h1>
-  <div class="sub" id="gen"></div>
+<header><div class="hwrap">
+  <img class="logo" src="https://static.tildacdn.com/tild3235-6137-4566-a635-313565643332/RORE-vert_w.png" alt="RoRe group">
+  <div class="sp"></div>
+  <div class="chip" id="gen"></div>
+</div></header>
+
+<div class="wrap">
+  <h1>Конференция 2026 → <em>NewBiz</em></h1>
+  <p class="lead">Как команда NewBiz отработала гостей конференции и сколько из них превратилось в сделки. Данные amoCRM, обновление каждый день.</p>
 
   <div class="filters">
-    <label>Гости <select id="fSeg"></select></label>
+    <label>Источник лида <select id="fSrc"></select></label>
     <label>Кто отработал <select id="fWho"></select></label>
+    <button class="btn" id="reset">Сбросить</button>
   </div>
 
   <div class="tiles" id="tiles"></div>
 
-  <div class="grid2">
-    <div class="card"><h2>Как отработаны гости</h2><div class="bars" id="procBars"></div>
-      <div class="note">Наведите на строку — подсказка с долей. «Закрыты массово» — разметка с админской учётки, не ручная работа NewBiz.</div></div>
-    <div class="card"><h2>Сделки NewBiz по этапам</h2><div class="bars" id="stageBars"></div>
-      <div class="note">Серым — отказ/проигрыш.</div></div>
+  <div class="card">
+    <h2>Сквозная воронка</h2>
+    <p class="cap">От регистрации до выигрыша. Золотые шаги — гости, чёрные — сделки NewBiz (по самому дальнему этапу в истории сделки).</p>
+    <div id="funnel"></div>
   </div>
 
   <div class="grid2">
-    <div class="card"><h2>Причины отказа</h2><div class="bars" id="reasonBars"></div></div>
-    <div class="card"><h2>Кто что сделал</h2><table id="whoTbl"></table></div>
+    <div class="card">
+      <h2>Явка</h2>
+      <p class="cap">Сколько одобренных гостей реально пришли или смотрели трансляцию.</p>
+      <div class="stats" id="showup"></div>
+      <div class="bars" id="viewBars"></div>
+      <div class="note">Распределение % просмотра онлайн-трансляции. Онлайн-гостей NewBiz не отрабатывал.</div>
+    </div>
+    <div class="card">
+      <h2>Как отработаны офлайн-гости</h2>
+      <p class="cap">Серым — массовая разметка и неразобранные.</p>
+      <div class="bars" id="procBars"></div>
+      <h2 style="margin-top:22px;font-size:16px">Причины отказа</h2>
+      <div class="bars" id="reasonBars" style="margin-top:10px"></div>
+    </div>
   </div>
 
-  <div class="card" style="margin-bottom:16px">
-    <h2>Сделки NewBiz, пришедшие от гостей</h2>
+  <div class="card">
+    <h2>Конверсия по источнику лида</h2>
+    <p class="cap">Какие каналы привлечения дают не просто регистрации, а сделки.</p>
+    <table id="srcTbl"></table>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Сделки NewBiz: докуда дошли</h2>
+      <p class="cap">Сколько сделок хотя бы раз были на этапе или дальше.</p>
+      <div class="bars" id="reachBars"></div>
+    </div>
+    <div class="card">
+      <h2>Сделки NewBiz: где сейчас</h2>
+      <p class="cap">Текущий этап. Серым — отказ / проигрыш.</p>
+      <div class="bars" id="stageBars"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Скорость отработки</h2>
+    <p class="cap">По неделям после конференции (16.07.2026): сколько гостей разметили вручную и сколько сделок NewBiz завели.</p>
+    <div class="legend"><span><i style="background:var(--mark)"></i>Гости размечены</span><span><i style="background:var(--black)"></i>Сделки созданы</span></div>
+    <div id="weeks"></div>
+  </div>
+
+  <div class="card">
+    <h2>Сотрудники</h2>
+    <p class="cap">Ручная работа NewBiz и её результат.</p>
+    <table id="whoTbl"></table>
+  </div>
+
+  <div class="card">
+    <h2>Сделки NewBiz от гостей</h2>
     <div class="toolbar">
-      <input id="q" placeholder="Поиск по названию / ответственному" size="36">
+      <input type="search" id="q" placeholder="Поиск: сделка, компания, ответственный" size="38">
       <select id="fStage"></select>
-      <label><input type="checkbox" id="fExcl"> показать исключённые</label>
+      <label style="font-size:13px;color:var(--ink-2)"><input type="checkbox" id="fExcl"> показать исключённые</label>
     </div>
     <table id="dealTbl"></table>
     <div class="note" id="dealNote"></div>
   </div>
-</div></div>
+  <footer>RoRe group · отчёт собирается автоматически из amoCRM</footer>
+</div>
+<div id="tip"></div>
 
 <script>
 const D = /*__DATA__*/null;
 const $ = id => document.getElementById(id);
 const pct = (a,b) => b ? (a/b*100).toFixed(1).replace('.',',')+'%' : '—';
-const fmt = n => n.toLocaleString('ru-RU');
+const fmt = n => (n ?? 0).toLocaleString('ru-RU');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-// guest: [id, seg, proc, reason, who, nbIds]
-const G = D.guests.map(([id,seg,proc,reason,who,nb]) => ({id,seg,proc,reason,who,nb}));
-const dealById = Object.fromEntries(D.deals.map(d => [d.id, d]));
+const median = xs => { if (!xs.length) return null; const s=[...xs].sort((a,b)=>a-b), m=s.length>>1; return s.length%2 ? s[m] : (s[m-1]+s[m])/2; };
+const G = D.guests.map(r => Object.fromEntries(D.gKeys.map((k,i) => [k, r[i]])));
+const DL = Object.fromEntries(D.deals.map(d => [d.id, d]));
+const ORDER = Object.fromEntries(D.stageOrder.map((s,i) => [s,i]));
+const LOST = new Set(D.lost);
+const atLeast = (ds, st) => ds.filter(d => ORDER[d.reached] >= ORDER[st]);
 
-$('gen').textContent = 'Данные amoCRM на ' + D.generated + ' · обновляется автоматически';
-$('fSeg').innerHTML = [['off','Офлайн-участники'],['on','Онлайн-участники'],['none','Не участвовали'],['all','Все, кроме сотрудников']]
-  .map(([v,t]) => `<option value="${v}">${t}</option>`).join('');
+const tip = $('tip');
+document.addEventListener('mousemove', e => { const t = e.target.closest('[data-tip]');
+  if (t) { tip.textContent = t.dataset.tip; tip.style.display='block'; tip.style.left=Math.min(e.clientX+14, innerWidth-tip.offsetWidth-8)+'px'; tip.style.top=(e.clientY+14)+'px'; }
+  else tip.style.display='none'; });
+
+$('gen').textContent = 'Данные на ' + D.generated;
+const srcCount = {}; G.forEach(g => srcCount[g.src] = (srcCount[g.src]||0)+1);
+const srcs = Object.keys(srcCount).sort((a,b) => srcCount[b]-srcCount[a]);
+$('fSrc').innerHTML = '<option value="">Все источники</option>' + srcs.map(s => `<option>${esc(s)}</option>`).join('');
 const whos = [...new Set(G.map(g => g.who).filter(Boolean))].sort();
 $('fWho').innerHTML = '<option value="">Все</option>' + whos.map(w => `<option>${esc(w)}</option>`).join('');
 const stages = D.stageOrder.filter(s => D.deals.some(d => d.stage === s));
 $('fStage').innerHTML = '<option value="">Все этапы</option>' + stages.map(s => `<option>${esc(s)}</option>`).join('');
 
-function bars(el, rows, total, mutedSet) {
+function bars(el, rows, total, cls) {
   const max = Math.max(1, ...rows.map(r => r[1]));
-  el.innerHTML = rows.map(([name, v]) =>
-    `<div class="bar" title="${esc(name)}: ${fmt(v)} (${pct(v,total)})">
-       <div class="n">${esc(name)}</div>
-       <div class="t"><div class="f${mutedSet && mutedSet.has(name) ? ' m':''}" style="width:${v/max*100}%"></div></div>
-       <div class="c">${fmt(v)} <small>${pct(v,total)}</small></div></div>`).join('') || '<div class="note">Нет данных</div>';
+  el.innerHTML = rows.map(([name, v, c]) => `<div class="bar" data-tip="${esc(name)}: ${fmt(v)} · ${pct(v,total)}">
+      <div class="n">${esc(name)}</div><div class="t"><div class="f ${c||cls||''}" style="width:${v/max*100}%"></div></div>
+      <div class="c">${fmt(v)}<small>${pct(v,total)}</small></div></div>`).join('') || '<div class="note">Нет данных</div>';
 }
+const dealsOf = gs => [...new Set(gs.flatMap(g => g.nb))].map(i => DL[i]).filter(Boolean);
+const isSel = g => g.proc === 'new' || g.proc === 'active';
 
-let sortKey = 'stage', sortDir = 1;
+let sortKey='stage', sortDir=1;
 function render() {
-  const seg = $('fSeg').value, who = $('fWho').value;
-  let gs = G.filter(g => g.seg !== 'emp' && (seg === 'all' || g.seg === seg));
-  const segTotal = gs.length;
+  const src = $('fSrc').value, who = $('fWho').value;
+  let gs = G.filter(g => !src || g.src === src);
   if (who) gs = gs.filter(g => g.who === who);
-  const pc = k => gs.filter(g => g.proc === k).length;
-  const dealIds = new Set(gs.flatMap(g => g.nb));
-  const deals = [...dealIds].map(i => dealById[i]).filter(Boolean);
-  const withDeal = gs.filter(g => g.nb.length).length;
-  const selected = pc('new') + pc('active');
-  const lost = new Set(D.lost);
-  const order = Object.fromEntries(D.stageOrder.map((s,i) => [s,i]));
-  const beyond = deals.filter(d => !lost.has(d.stage) && order[d.stage] > order['Исследование']).length;
+  const off = gs.filter(g => g.seg === 'off');
+  const offDeals = dealsOf(off), allDeals = dealsOf(gs);
+  const pc = k => off.filter(g => g.proc === k).length;
+  const sel = off.filter(isSel);
+  const apOff = gs.filter(g => g.appr === 'Офлайн'), came = apOff.filter(g => g.seg === 'off');
+  const md = median(allDeals.map(d => d.days));
+  const adv = atLeast(offDeals, 'Таргет').length;
 
   $('tiles').innerHTML = [
-    [fmt(gs.length), who ? 'Гостей у сотрудника' : 'Гостей в сегменте', who ? 'из ' + fmt(segTotal) : ''],
-    [fmt(gs.length - pc('todo')), 'Разобрано', pct(gs.length - pc('todo'), gs.length)],
-    [fmt(pc('todo')), 'Не разобрано', pct(pc('todo'), gs.length)],
-    [fmt(selected), 'Отобрано NewBiz', '«Новый лид» + «Действующий лид»'],
-    [fmt(deals.length), 'Сделок в NewBiz', 'у ' + withDeal + ' гостей (' + pct(withDeal, gs.length) + ')'],
-    [fmt(beyond), 'Дальше «Исследования»', pct(beyond, deals.length) + ' сделок'],
-  ].map(([v,l,s]) => `<div class="tile"><div class="v">${v}</div><div class="l">${l}</div><div class="s">${s}</div></div>`).join('');
+    [fmt(off.length), pct(came.length, apOff.length), 'Пришли офлайн', 'явка от одобренных на офлайн', 1],
+    [fmt(off.length - pc('todo')), pct(off.length - pc('todo'), off.length), 'Разобрано', fmt(pc('todo')) + ' ещё не разобраны'],
+    [fmt(sel.length), pct(sel.length, off.length), 'Отобрано в работу', '«Новый лид» + «Действующий лид»'],
+    [fmt(offDeals.length), pct(offDeals.length, sel.length), 'Сделок в NewBiz', 'от отобранных · с неучастниками ' + allDeals.length],
+    [fmt(adv), pct(adv, offDeals.length), 'Дальше «Исследования»', 'от сделок офлайн-гостей'],
+    [md == null ? '—' : Math.round(md), '', 'Дней до сделки', 'медиана: от конференции до создания'],
+  ].map(([v,p,l,s,dark]) => `<div class="tile${dark?' dark':''}"><div class="v">${v}${p?`<small>${p}</small>`:''}</div><div class="l">${l}</div><div class="s">${s}</div></div>`).join('');
 
-  bars($('procBars'), ['new','active','manual','auto','todo'].map(k => [D.procNames[k], pc(k)]), gs.length,
-       new Set([D.procNames.auto, D.procNames.todo]));
+  const reg = gs.filter(g => g.reg), ap = reg.filter(g => g.appr === 'Офлайн'), ver = ap.filter(g => g.ver), tic = ver.filter(g => g.ticket);
+  const tgt = off.filter(g => g.target), done = tgt.filter(g => g.proc !== 'todo'), sl = tgt.filter(isSel);
+  const steps = [
+    ['Зарегистрировались', reg.length], ['Одобрен офлайн-формат', ap.length], ['Прошли верификацию', ver.length],
+    ['Получили билет', tic.length], ['Пришли офлайн', off.length], ['Целевые (не клиенты/партнёры/PR)', tgt.length],
+    ['Разобраны NewBiz', done.length], ['Отобраны в работу', sl.length],
+    ['Сделка в NewBiz', offDeals.length, 1], ['Дальше «Исследования»', adv, 1],
+    ['Встреча назначена и дальше', atLeast(offDeals,'Встреча назначена').length, 1],
+    ['Участие в тендере и дальше', atLeast(offDeals,'Участие в тендере').length, 1],
+    ['Выигрыш / контракт', atLeast(offDeals,'Выигрыш тендера').length, 1],
+  ];
+  const fmax = Math.max(1, ...steps.map(r => r[1])), base = steps[0][1];
+  $('funnel').innerHTML = '<div class="fn head"><div>Шаг</div><div></div><div style="text-align:right">Кол-во</div><div style="text-align:right">от пред.</div><div style="text-align:right" class="p r">от рег.</div></div>' +
+    steps.map(([n,v,deal],i) => (deal && !steps[i-1][2] ? '<div class="divider"></div>' : '') +
+      `<div class="fn${deal?' deal':''}" data-tip="${esc(n)}: ${fmt(v)} ${deal?'сделок':'гостей'}">
+        <div class="n">${esc(n)}</div><div class="t"><div class="f" style="width:${v ? Math.max(v/fmax*100, 0.6) : 0}%"></div></div>
+        <div class="c">${fmt(v)} <span style="font-weight:400;color:var(--ink-3);font-size:12px">${deal?'сд.':'гост.'}</span></div>
+        <div class="p">${i ? '<b>'+pct(v, steps[i-1][1])+'</b>' : '—'}</div><div class="p r">${pct(v, base)}</div></div>`).join('');
 
-  const sc = {}; deals.forEach(d => sc[d.stage] = (sc[d.stage]||0) + 1);
-  bars($('stageBars'), D.stageOrder.filter(s => sc[s]).map(s => [s, sc[s]]), deals.length, lost);
+  const apOn = gs.filter(g => g.appr === 'Онлайн'), cameOn = apOn.filter(g => g.seg === 'on');
+  $('showup').innerHTML = `<div class="stat"><div class="v">${fmt(came.length)}<small>${pct(came.length, apOff.length)}</small></div><div class="l">пришли из ${fmt(apOff.length)} одобренных на офлайн</div></div>
+    <div class="stat"><div class="v">${fmt(cameOn.length)}<small>${pct(cameOn.length, apOn.length)}</small></div><div class="l">смотрели из ${fmt(apOn.length)} одобренных на онлайн</div></div>`;
+  const vv = gs.filter(g => g.seg === 'on' && g.view != null).map(g => g.view);
+  bars($('viewBars'), [['Смотрели до 25%', vv.filter(v => v < 25).length], ['25–49%', vv.filter(v => v >= 25 && v < 50).length],
+              ['50–74%', vv.filter(v => v >= 50 && v < 75).length], ['75–100%', vv.filter(v => v >= 75).length]], vv.length);
 
-  const rc = {}; gs.filter(g => g.reason).forEach(g => rc[g.reason] = (rc[g.reason]||0) + 1);
-  bars($('reasonBars'), Object.entries(rc).sort((a,b) => b[1]-a[1]), gs.length);
+  bars($('procBars'), ['new','active','manual','auto','todo'].map(k => [D.procNames[k], pc(k), (k==='auto'||k==='todo')?'m':'']), off.length);
+  const rc = {}; off.filter(g => g.reason).forEach(g => rc[g.reason] = (rc[g.reason]||0)+1);
+  bars($('reasonBars'), Object.entries(rc).sort((a,b) => b[1]-a[1]), off.length);
 
-  const wt = {}; G.filter(g => g.who && g.seg !== 'emp' && (seg === 'all' || g.seg === seg)).forEach(g => {
-    wt[g.who] = wt[g.who] || {new:0,active:0,manual:0,deals:new Set()};
-    if (wt[g.who][g.proc] !== undefined) wt[g.who][g.proc]++;
-    g.nb.forEach(i => wt[g.who].deals.add(i));
-  });
-  $('whoTbl').innerHTML = '<tr><th>Сотрудник</th><th class="num">Новый лид</th><th class="num">Действующий лид</th><th class="num">Другие отказы</th><th class="num">Сделок NewBiz</th></tr>' +
-    Object.entries(wt).sort((a,b) => (b[1].new+b[1].active+b[1].manual)-(a[1].new+a[1].active+a[1].manual))
-      .map(([n,c]) => `<tr><td>${esc(n)}</td><td class="num">${c.new}</td><td class="num">${c.active}</td><td class="num">${c.manual}</td><td class="num">${c.deals.size}</td></tr>`).join('')
-    + (Object.keys(wt).length ? '' : '<tr><td colspan="5" style="color:var(--text-muted)">В этом сегменте ручной разметки нет</td></tr>');
+  const bySrc = {}; G.filter(g => !who || g.who === who).forEach(g => (bySrc[g.src] = bySrc[g.src] || []).push(g));
+  const srcRows = Object.entries(bySrc).map(([s, a]) => { const o = a.filter(g => g.seg==='off'); const ds = dealsOf(a);
+    return {s, n:a.length, came:o.length, sel:o.filter(isSel).length, deals:ds.length, adv:atLeast(ds,'Таргет').length}; })
+    .sort((a,b) => b.deals-a.deals || b.n-a.n);
+  const maxConv = Math.max(0.0001, ...srcRows.map(r => r.deals / r.n));
+  $('srcTbl').innerHTML = '<tr><th>Источник</th><th class="num">Гостей</th><th class="num">Пришли офлайн</th><th class="num">Отобраны</th><th class="num">Сделок NewBiz</th><th class="num">Дальше «Иссл.»</th><th class="num">Гость → сделка</th></tr>' +
+    srcRows.map(r => `<tr${src && r.s===src ? ' style="background:var(--track)"':''}><td>${esc(r.s)}</td><td class="num">${fmt(r.n)}</td>
+      <td class="num">${fmt(r.came)} <span style="color:var(--ink-3)">${pct(r.came, r.n)}</span></td><td class="num">${fmt(r.sel)}</td>
+      <td class="num"><b>${fmt(r.deals)}</b></td><td class="num">${fmt(r.adv)}</td>
+      <td class="num">${pct(r.deals, r.n)}<span class="mini" style="width:${r.deals/r.n/maxConv*60}px"></span></td></tr>`).join('');
 
-  // таблица сделок
+  const reachSt = D.stageOrder.filter(s => !LOST.has(s) && ORDER[s] >= ORDER['Исследование']);
+  bars($('reachBars'), reachSt.map(s => [s, atLeast(allDeals, s).length]), allDeals.length, 'k');
+  const sc = {}; allDeals.forEach(d => sc[d.stage] = (sc[d.stage]||0)+1);
+  bars($('stageBars'), D.stageOrder.filter(s => sc[s]).map(s => [s, sc[s], LOST.has(s) ? 'm' : 'k']), allDeals.length);
+
+  const wk = {}; const add = (d, k) => { if (d == null || d < 0) return; const w = Math.floor(d/7); wk[w] = wk[w] || {g:0, d:0}; wk[w][k]++; };
+  gs.forEach(g => add(g.mark_day, 'g')); allDeals.forEach(d => add(d.days, 'd'));
+  const keys = Object.keys(wk).map(Number);
+  const nW = keys.length ? Math.max(...keys) + 1 : 1, W = 1180, H = 190, pl = 30, pb = 26, bw = (W - pl) / nW;
+  const ym = Math.max(1, ...Object.values(wk).flatMap(o => [o.g, o.d]));
+  const start = Date.UTC(2026, 6, 16);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Разметка и сделки по неделям">`;
+  for (let t = 0; t <= 2; t++) { const y = H - pb - (H - pb - 10) * t / 2;
+    svg += `<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="#ece9e3"/><text x="${pl-6}" y="${y+4}" font-size="11" text-anchor="end" fill="#8a8986">${Math.round(ym*t/2)}</text>`; }
+  for (let i = 0; i < nW; i++) { const o = wk[i] || {g:0,d:0}, x = pl + i*bw, cw = Math.max(2, Math.min(14, bw/2 - 3));
+    const hg = (H-pb-10)*o.g/ym, hd = (H-pb-10)*o.d/ym, dt = new Date(start + i*7*864e5);
+    const lbl = dt.getUTCDate().toString().padStart(2,'0') + '.' + (dt.getUTCMonth()+1).toString().padStart(2,'0');
+    svg += `<g data-tip="Неделя с ${lbl}: размечено гостей ${o.g}, создано сделок ${o.d}"><rect x="${x}" y="0" width="${bw}" height="${H-pb}" fill="transparent"/>
+      <rect x="${x + bw/2 - cw - 1}" y="${H-pb-hg}" width="${cw}" height="${hg}" rx="3" fill="#a88252"/>
+      <rect x="${x + bw/2 + 1}" y="${H-pb-hd}" width="${cw}" height="${hd}" rx="3" fill="#000"/></g>`;
+    if (i % Math.ceil(nW/12) === 0) svg += `<text x="${x + bw/2}" y="${H-8}" font-size="11" text-anchor="middle" fill="#8a8986">${lbl}</text>`; }
+  $('weeks').innerHTML = svg + '</svg>';
+
+  const P = {}; G.filter(g => g.who && (!src || g.src === src)).forEach(g => (P[g.who] = P[g.who] || []).push(g));
+  $('whoTbl').innerHTML = '<tr><th>Сотрудник</th><th class="num">Разобрал</th><th class="num">Отобрал</th><th class="num">Отказал</th><th class="num">Сделок NewBiz</th><th class="num">Дальше «Иссл.»</th><th class="num">Отобран → сделка</th><th class="num">Дней до разметки</th></tr>' +
+    (Object.entries(P).sort((a,b) => b[1].length - a[1].length).map(([n, a]) => { const s = a.filter(isSel);
+      const ds = dealsOf(s), wd = s.filter(g => g.nb.length).length, m = median(a.map(g => g.mark_day).filter(x => x != null));
+      return `<tr${who===n?' style="background:var(--track)"':''}><td>${esc(n)}</td><td class="num">${a.length}</td><td class="num">${s.length}</td><td class="num">${a.filter(g=>g.proc==='manual').length}</td>
+        <td class="num"><b>${ds.length}</b></td><td class="num">${atLeast(ds,'Таргет').length}</td><td class="num">${pct(wd, s.length)}</td><td class="num">${m==null?'—':Math.round(m)}</td></tr>`; }).join('')
+    || '<tr><td colspan="8" style="color:var(--ink-3)">Ручной разметки нет</td></tr>');
+
   const q = $('q').value.trim().toLowerCase(), st = $('fStage').value, showEx = $('fExcl').checked;
-  const gIds = new Set(gs.map(g => g.id));
-  let rows = D.deals.filter(d => d.excluded ? (showEx && d.guests.some(x => gIds.has(x))) : dealIds.has(d.id));
+  const gIds = new Set(gs.map(g => g.id)), ids = new Set(allDeals.map(d => d.id));
+  let rows = D.deals.filter(d => d.excluded ? (showEx && d.guests.some(x => gIds.has(x))) : ids.has(d.id));
   if (st) rows = rows.filter(d => d.stage === st);
-  if (q) rows = rows.filter(d => (d.name + ' ' + d.resp + ' ' + d.company).toLowerCase().includes(q));
-  const key = {stage: d => order[d.stage] ?? 99, name: d => d.name.toLowerCase(), resp: d => d.resp || '',
-               created: d => d.created, budget: d => d.budget, guests: d => d.guests.length}[sortKey];
+  if (q) rows = rows.filter(d => (d.name+' '+d.resp+' '+d.company+' '+d.agency).toLowerCase().includes(q));
+  const key = {stage: d => ORDER[d.stage] ?? 99, reached: d => ORDER[d.reached] ?? 0, name: d => d.name.toLowerCase(), resp: d => d.resp||'',
+               created: d => d.created, budget: d => d.budget}[sortKey];
   rows.sort((a,b) => (key(a) > key(b) ? 1 : key(a) < key(b) ? -1 : 0) * sortDir);
-  const arrow = k => sortKey === k ? (sortDir > 0 ? ' ↑' : ' ↓') : '';
-  $('dealTbl').innerHTML = `<tr><th data-k="name">Сделка${arrow('name')}</th><th data-k="stage">Этап${arrow('stage')}</th>
-    <th data-k="resp">Ответственный${arrow('resp')}</th><th data-k="created">Создана${arrow('created')}</th>
-    <th data-k="budget" class="num">Бюджет${arrow('budget')}</th><th data-k="guests">Гости в «Конференции 2026»${arrow('guests')}</th></tr>` +
-    rows.map(d => `<tr class="${d.excluded ? 'excl' : ''}" ${d.excluded ? `title="${esc(d.excluded)}"` : ''}>
-      <td><a href="${D.amo}${d.id}" target="_blank">${esc(d.name)}</a>${d.company ? `<br><small style="color:var(--text-muted)">${esc(d.company)}</small>` : ''}</td>
-      <td>${esc(d.stage)}</td><td>${esc(d.resp)}</td><td class="nw">${d.created}</td>
-      <td class="num">${d.budget ? fmt(d.budget) + ' ₽' : '—'}</td>
-      <td>${d.guests.map(g => `<a class="pill" href="${D.amo}${g}" target="_blank">${g}</a>`).join('')}
-        ${d.procs.map(p => `<span class="pill">${esc(D.procNames[p])}</span>`).join('')}</td></tr>`).join('');
-  $('dealTbl').querySelectorAll('th').forEach(th => th.onclick = () => {
-    const k = th.dataset.k; sortDir = sortKey === k ? -sortDir : 1; sortKey = k; render(); });
-  $('dealNote').textContent = rows.length + ' сделок. Связь: сделка NewBiz создана после конференции и у неё тот же контакт, что у гостя (для «Новый лид» — или та же компания).'
-    + (D.deals.some(d => d.excluded) ? ' Исключённые (действующие клиенты) не входят в цифры выше.' : '');
+  const ar = k => sortKey === k ? (sortDir > 0 ? ' ↑' : ' ↓') : '';
+  $('dealTbl').innerHTML = `<tr><th data-k="name">Сделка${ar('name')}</th><th data-k="stage">Сейчас${ar('stage')}</th><th data-k="reached">Дошла до${ar('reached')}</th>
+    <th data-k="resp">Ответственный${ar('resp')}</th><th data-k="created">Создана${ar('created')}</th><th data-k="budget" class="num">Бюджет${ar('budget')}</th><th>Гости · источник</th></tr>` +
+    rows.map(d => `<tr class="${d.excluded?'excl':''}" ${d.excluded?`data-tip="${esc(d.excluded)}"`:''}>
+      <td><a href="${D.amo}${d.id}" target="_blank">${esc(d.name)}</a>${d.company||d.agency?`<br><small style="color:var(--ink-3)">${esc(d.company)}${d.company&&d.agency?' · ':''}${esc(d.agency)}</small>`:''}</td>
+      <td>${esc(d.stage)}</td><td>${esc(d.reached)}</td><td>${esc(d.resp)}</td><td class="nw">${d.created}</td>
+      <td class="num">${d.budget ? fmt(d.budget)+' ₽' : '—'}</td>
+      <td>${d.guests.map(g => `<a class="pill" href="${D.amo}${g}" target="_blank">${g}</a>`).join('')}${d.srcs.map(s => `<span class="pill g">${esc(s)}</span>`).join('')}</td></tr>`).join('');
+  $('dealTbl').querySelectorAll('th[data-k]').forEach(th => th.onclick = () => { const k = th.dataset.k; sortDir = sortKey===k ? -sortDir : 1; sortKey = k; render(); });
+  const bud = rows.filter(d => !d.excluded).reduce((s,d) => s + (d.budget||0), 0);
+  $('dealNote').textContent = `${rows.length} сделок · бюджет ${fmt(bud)} ₽ (заполнен в ${rows.filter(d=>d.budget).length}). Связь: сделка NewBiz создана после конференции и у неё тот же контакт, что у гостя (для «Новый лид» — или та же компания).`;
 }
-['fSeg','fWho','fStage','fExcl'].forEach(id => $(id).onchange = render);
+['fSrc','fWho','fStage','fExcl'].forEach(id => $(id).onchange = render);
 $('q').oninput = render;
+$('reset').onclick = () => { ['fSrc','fWho','fStage'].forEach(id => $(id).value=''); $('q').value=''; $('fExcl').checked=false; render(); };
 render();
 </script>
 </body>
