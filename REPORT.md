@@ -1,6 +1,6 @@
 # Отработка гостей «Конференции 2026» командой NewBiz
 
-_Обновлено автоматически из amoCRM: **17.11.2026 00:45 МСК**. Интерактивная версия — `docs/index.html`._
+_Обновлено автоматически из amoCRM: **17.11.2026 01:06 МСК**. Интерактивная версия — `docs/index.html`._
 
 ## Коротко
 
@@ -93,7 +93,7 @@ _Обновлено автоматически из amoCRM: **17.11.2026 00:45 �
 | [TZOM // Скоуп? // Ислледование](https://roregroup.amocrm.ru/leads/detail/71473695) | Исследование | Наталья Белова | 2026-09-24 | [70917303](https://roregroup.amocrm.ru/leads/detail/70917303) |
 | [itab // Скоуп?//Исследование](https://roregroup.amocrm.ru/leads/detail/71435141) | Исследование | Наталья Белова | 2026-09-18 | [70778587](https://roregroup.amocrm.ru/leads/detail/70778587) |
 | [mirds.ru // Скоуп? //Исследование](https://roregroup.amocrm.ru/leads/detail/71435159) | Исследование | Наталья Белова | 2026-09-18 | [70857963](https://roregroup.amocrm.ru/leads/detail/70857963), [70857997](https://roregroup.amocrm.ru/leads/detail/70857997), [70858045](https://roregroup.amocrm.ru/leads/detail/70858045) |
-| [АмериаРусс//Скоуп(?)//2027](https://roregroup.amocrm.ru/leads/detail/71496207) | Исследование | Елизавета Ильина (DARR) | 2026-09-27 | [70983389](https://roregroup.amocrm.ru/leads/detail/70983389) |
+| [АмериаРусс//Скоуп(?)//2027](https://roregroup.amocrm.ru/leads/detail/71496207) | Исследование | Елизавета Ильина | DARR | 2026-09-27 | [70983389](https://roregroup.amocrm.ru/leads/detail/70983389) |
 | [ГК Лето // Скоуп? // Исследование](https://roregroup.amocrm.ru/leads/detail/71474469) | Исследование | Наталья Белова | 2026-09-24 | [70261856](https://roregroup.amocrm.ru/leads/detail/70261856) |
 | [Гельтек // Prometheus Serpent перезапуск // 26-27](https://roregroup.amocrm.ru/leads/detail/71191691) | Исследование | Наталья Белова | 2026-08-13 | [70642715](https://roregroup.amocrm.ru/leads/detail/70642715) |
 | [ДП//Скоуп(?)//2027](https://roregroup.amocrm.ru/leads/detail/71496131) | Исследование | Наталья Белова | 2026-09-27 | [70898775](https://roregroup.amocrm.ru/leads/detail/70898775) |
@@ -117,19 +117,19 @@ _Обновлено автоматически из amoCRM: **17.11.2026 00:45 �
 | [Эртелеком// Скоуп?//Исследование](https://roregroup.amocrm.ru/leads/detail/71435073) | Исследование | Наталья Белова | 2026-09-18 | [70722499](https://roregroup.amocrm.ru/leads/detail/70722499) |
 | [Modi//Спецы(?)//2027](https://roregroup.amocrm.ru/leads/detail/71015189) | Первый контакт | Наталья Белова | 2026-07-21 | [70963059](https://roregroup.amocrm.ru/leads/detail/70963059) |
 | [Вкусвилл // BX проактив// 2027 ideas](https://roregroup.amocrm.ru/leads/detail/71435431) | Первый контакт | Наталья Белова | 2026-09-18 | [70931879](https://roregroup.amocrm.ru/leads/detail/70931879), [70932731](https://roregroup.amocrm.ru/leads/detail/70932731) |
-| [Kerama Marazzi//Скоуп(?)//2026](https://roregroup.amocrm.ru/leads/detail/71219355) | Встреча назначена | Дмитрий Делов (DARR) | 2026-08-18 | [70712781](https://roregroup.amocrm.ru/leads/detail/70712781), [70715429](https://roregroup.amocrm.ru/leads/detail/70715429) |
+| [Kerama Marazzi//Скоуп(?)//2026](https://roregroup.amocrm.ru/leads/detail/71219355) | Встреча назначена | Дмитрий Делов | DARR | 2026-08-18 | [70712781](https://roregroup.amocrm.ru/leads/detail/70712781), [70715429](https://roregroup.amocrm.ru/leads/detail/70715429) |
 | [Merck//GEO-SEO//2026](https://roregroup.amocrm.ru/leads/detail/71015215) | Прогрев | Наталья Белова | 2026-07-21 | [70221268](https://roregroup.amocrm.ru/leads/detail/70221268), [70308461](https://roregroup.amocrm.ru/leads/detail/70308461) |
 | [Комус//Е-ком//2026](https://roregroup.amocrm.ru/leads/detail/71014447) | Прогрев | Наталья Белова | 2026-07-21 | [70707973](https://roregroup.amocrm.ru/leads/detail/70707973), [70890895](https://roregroup.amocrm.ru/leads/detail/70890895) |
 | [Air Liquide // SEO // 2026-2027](https://roregroup.amocrm.ru/leads/detail/71131569) | Участие в тендере | Наталья Белова | 2026-08-05 | [70875365](https://roregroup.amocrm.ru/leads/detail/70875365) |
 | [INMYROOM // Скоуп?// 2026-2027](https://roregroup.amocrm.ru/leads/detail/71167171) | Участие в тендере | Наталья Белова | 2026-08-10 | [70921047](https://roregroup.amocrm.ru/leads/detail/70921047) |
-| [Национальные Приоритеты//Туризм и индустрия гостеприимства//Путешествия в межсезонье//2026](https://roregroup.amocrm.ru/leads/detail/71124471) ⚑ | Выигрыш тендера | Елизавета Ильина (DARR) | 2026-08-04 | [70763939](https://roregroup.amocrm.ru/leads/detail/70763939) |
-| [Национальные приоритеты // Молодежь и дети//Научные специальности//2026](https://roregroup.amocrm.ru/leads/detail/71134263) ⚑ | Выигрыш тендера | Елизавета Ильина (DARR) | 2026-08-05 | [70763939](https://roregroup.amocrm.ru/leads/detail/70763939) |
+| [Национальные Приоритеты//Туризм и индустрия гостеприимства//Путешествия в межсезонье//2026](https://roregroup.amocrm.ru/leads/detail/71124471) ⚑ | Выигрыш тендера | Елизавета Ильина | DARR | 2026-08-04 | [70763939](https://roregroup.amocrm.ru/leads/detail/70763939) |
+| [Национальные приоритеты // Молодежь и дети//Научные специальности//2026](https://roregroup.amocrm.ru/leads/detail/71134263) ⚑ | Выигрыш тендера | Елизавета Ильина | DARR | 2026-08-05 | [70763939](https://roregroup.amocrm.ru/leads/detail/70763939) |
 | [Снежная Королева//SEO-GEO//2026](https://roregroup.amocrm.ru/leads/detail/71265279) | Выигрыш тендера | Наталья Белова | 2026-08-25 | [70591862](https://roregroup.amocrm.ru/leads/detail/70591862) |
 | [DrTheiss//Digital (врачи)//2027](https://roregroup.amocrm.ru/leads/detail/71569473) | Отказ | Наталья Белова | 2026-10-06 | [70448009](https://roregroup.amocrm.ru/leads/detail/70448009) |
 | [Radisson//Маркетинговые коммуникации и PR//2026](https://roregroup.amocrm.ru/leads/detail/71049459) | Отказ | Наталья Белова | 2026-07-24 | [70394849](https://roregroup.amocrm.ru/leads/detail/70394849) |
 | [Авексима(Криспанорм)//Медиа//26-27](https://roregroup.amocrm.ru/leads/detail/71015089) | Проигрыш | Наталья Белова | 2026-07-21 | [70770505](https://roregroup.amocrm.ru/leads/detail/70770505), [70939505](https://roregroup.amocrm.ru/leads/detail/70939505) |
 | [Альтернатива // Поддержка в e-retail // 2026-2027](https://roregroup.amocrm.ru/leads/detail/71191955) | Проигрыш | Наталья Белова | 2026-08-13 | [70667495](https://roregroup.amocrm.ru/leads/detail/70667495) |
-| [Национальные приоритеты//Молодежь и дети//Учитель навсегда//1 сен – 18 окт2026](https://roregroup.amocrm.ru/leads/detail/71168103) ⚑ | Проигрыш | Елизавета Ильина (DARR) | 2026-08-10 | [70763939](https://roregroup.amocrm.ru/leads/detail/70763939) |
+| [Национальные приоритеты//Молодежь и дети//Учитель навсегда//1 сен – 18 окт2026](https://roregroup.amocrm.ru/leads/detail/71168103) ⚑ | Проигрыш | Елизавета Ильина | DARR | 2026-08-10 | [70763939](https://roregroup.amocrm.ru/leads/detail/70763939) |
 
 ⚑ — не в конверсии: Национальные приоритеты — действующий клиент DARR, сделки в NewBiz были до конференции.
 
