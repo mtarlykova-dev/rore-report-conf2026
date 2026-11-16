@@ -1,0 +1,46 @@
+name: Обновить отчёт из amoCRM
+
+on:
+  schedule:
+    - cron: "17 3 * * *"   # каждый день в 06:17 МСК
+  workflow_dispatch: {}     # кнопка «Run workflow»
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-report
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Выгрузка из amoCRM
+        env:
+          AMO_TOKEN: ${{ secrets.AMO_TOKEN }}
+          AMO_DOMAIN: ${{ vars.AMO_DOMAIN || 'roregroup.amocrm.ru' }}
+        run: python3 scripts/fetch_amo.py
+      - name: Сборка отчёта
+        run: python3 scripts/build_report.py
+      - name: Интерактивный отчёт как файл запуска
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-html
+          path: docs/index.html
+          retention-days: 30
+      - name: Коммит, если цифры изменились
+        run: |
+          git config user.name "report-bot"
+          git config user.email "report-bot@users.noreply.github.com"
+          git add REPORT.md docs/index.html
+          if git diff --cached --quiet; then
+            echo "Без изменений"
+          else
+            git commit -m "Отчёт: обновление из amoCRM $(TZ=Europe/Moscow date '+%d.%m.%Y %H:%M')"
+            git push
+          fi

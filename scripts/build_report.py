@@ -1,298 +1,282 @@
-"""Собирает REPORT.md из выгрузки amoCRM в data/.
+"""Строит REPORT.md и docs/index.html из data/snapshot.json.
 
 Запуск: python3 scripts/build_report.py
 """
-import csv
+import json
+import sys
 from collections import Counter, defaultdict
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import config as C  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data"
-AMO = "https://roregroup.amocrm.ru/leads/detail/"
+S = json.loads((ROOT / "data" / "snapshot.json").read_text(encoding="utf-8"))
+AMO = f"https://{S['domain']}/leads/detail/"
+MSK = timezone(timedelta(hours=3))
 
-CONF_STATUS = {"142": "Участие", "143": "Не участие", "87065186": "Факт присутствия"}
-SEG = {"off": "Офлайн-участники", "on": "Онлайн-участники", "none": "Не участвовали",
-       "emp": "Сотрудники RoRe"}
-NB_ORDER = ["Исследование", "Таргет", "Первый контакт", "Встреча назначена", "Прогрев",
-            "Подготовка к тендеру", "Участие в тендере", "Выигрыш тендера",
-            "Контракт заключен", "Отказ", "Проигрыш"]
-NB_ACTIVE = NB_ORDER[:8]
-NB_PAST_RESEARCH = NB_ORDER[1:9]
-AUTO = "Родная Речь"
-MANUAL_REJECT = {"Нет бюджета", "Не профильная компания", "Не актуально сейчас",
-                 "Не целевой контакт", "Нет потребности", "Не наш сегмент / рынок",
-                 "Уже работает с другим подрядчиком", "Отказался от дальнейшего контакта",
-                 "Не отвечает / не выходит на связь", "Дубль", "Спам / мусорный лид"}
+users = S["users"]
+conf_st = S["status_names"][str(C.CONF_PIPELINE_ID)]
+nb_st = S["status_names"][str(C.NB_PIPELINE_ID)]
 
 
-def read(name, delim):
-    with open(DATA / name, newline="") as f:
-        return list(csv.DictReader(f, delimiter=delim))
+def uname(i):
+    return users.get(str(i), str(i)) if i else None
 
 
-agg = read("conf_aggregate.csv", "|")
-for r in agg:
-    r["count"] = int(r["count"])
-linked = read("conf_leads_linked.csv", "|")
-nb = {d["nb_lead_id"]: d for d in read("newbiz_linked_deals.csv", "\t")}
-
-
-def ids(s):
-    return [x for x in s.split(",") if x]
+def day(ts):
+    return datetime.fromtimestamp(ts, MSK).strftime("%Y-%m-%d")
 
 
 def pct(a, b):
     return f"{a / b * 100:.1f}%" if b else "—"
 
 
-def link(i):
-    return f"[{i}]({AMO}{i})"
+SEG_NAMES = {"off": "Офлайн-участники", "on": "Онлайн-участники", "none": "Не участвовали",
+             "emp": "Сотрудники RoRe"}
+PROC_NAMES = {"new": "Взяли в работу («Новый лид»)", "active": "«Действующий лид»",
+              "manual": "Отказ вручную", "auto": "Закрыты массово", "todo": "Не разобраны"}
 
 
-out = []
-w = out.append
-total = sum(r["count"] for r in agg)
+# ---------------------------------------------------------------- модель
+def segment(l):
+    cf = l["cf"]
+    if cf.get(str(C.F_EMPLOYEE)):
+        return "emp"
+    if cf.get(str(C.F_OFFLINE)):
+        return "off"
+    if cf.get(str(C.F_ONLINE)):
+        return "on"
+    return "none"
 
-# ---------- 1. Состав воронки ----------
-seg_cnt = Counter()
-for r in agg:
-    seg_cnt[r["segment"]] += r["count"]
-status_cnt = Counter()
-for r in agg:
-    status_cnt[r["status_id"]] += r["count"]
 
-# ---------- 2. Офлайн-участники: отработка ----------
-off = [r for r in agg if r["segment"] == "off"]
-off_total = sum(r["count"] for r in off)
-took = sum(r["count"] for r in off if r["new_lead"] == "1")
-reason_rows = [r for r in off if r["reason"] != "-" and r["new_lead"] == "0"]
-by_reason_manual = Counter()
-by_reason_auto = Counter()
-for r in reason_rows:
-    (by_reason_auto if r["reason_set_by"] == AUTO else by_reason_manual)[r["reason"]] += r["count"]
-untouched = sum(r["count"] for r in off if r["reason"] == "-" and r["new_lead"] == "0")
-untouched_in_fact = sum(r["count"] for r in off if r["reason"] == "-" and r["new_lead"] == "0"
-                        and r["status_id"] == "87065186")
-manual_total = took + sum(by_reason_manual.values())
-auto_total = sum(by_reason_auto.values())
-active_lead = by_reason_manual.get("Действующий лид", 0)
+def index(arr, key):
+    m = defaultdict(list)
+    for n in arr:
+        for x in n[key]:
+            m[x].append(n["id"])
+    return m
 
-# кто что сделал вручную
+
+nb_after = [n for n in S["nb_leads"] if n["created_at"] > C.CONF_DATE_TS]
+nb_before = [n for n in S["nb_leads"] if n["created_at"] <= C.CONF_DATE_TS]
+after_c, after_co = index(nb_after, "contacts"), index(nb_after, "companies")
+before_c = index(nb_before, "contacts")
+nb_by_id = {n["id"]: n for n in S["nb_leads"]}
+
+
+def excluded(i):
+    n = nb_by_id[i]
+    return bool(n["companies"]) and n["companies"][0] in C.EXCLUDE_NB_COMPANY_IDS
+
+
+guests = []
+for l in S["conf_leads"]:
+    cf = l["cf"]
+    reason = cf.get(str(C.F_REASON))
+    if isinstance(reason, list):
+        reason = ", ".join(map(str, reason))
+    new = bool(cf.get(str(C.F_NEW_LEAD)))
+    r_by = uname(S["setters"]["reason"].get(str(l["id"])))
+    n_by = uname(S["setters"]["new_lead"].get(str(l["id"])))
+    if new:
+        proc, who = "new", n_by
+    elif reason == C.REASON_ACTIVE_LEAD:
+        proc, who = "active", r_by
+    elif reason:
+        proc, who = ("auto" if (r_by is None or r_by in C.AUTO_USERS) else "manual"), r_by
+    else:
+        proc, who = "todo", None
+    if who in C.AUTO_USERS:
+        who = None
+    linked = {i for c in l["contacts"] for i in after_c.get(c, [])}
+    if new:  # гостя взяли, а сделку на эту компанию завёл коллега
+        linked |= {i for c in l["companies"] for i in after_co.get(c, [])}
+    guests.append({
+        "id": l["id"], "seg": segment(l), "stage": conf_st.get(str(l["status_id"]), str(l["status_id"])),
+        "reason": reason, "proc": proc, "who": who, "nb": sorted(linked),
+        "nb_before": sorted({i for c in l["contacts"] for i in before_c.get(c, [])}),
+    })
+
+deal_src = defaultdict(set)
+for g in guests:
+    if g["seg"] != "emp":
+        for i in g["nb"]:
+            deal_src[i].add(g["id"])
+gby = {g["id"]: g for g in guests}
+deals = []
+for i, gids in deal_src.items():
+    n = nb_by_id[i]
+    comp = n["companies"][0] if n["companies"] else None
+    gs = [gby[x] for x in gids]
+    deals.append({
+        "id": i, "name": n["name"], "stage": nb_st.get(str(n["status_id"]), str(n["status_id"])),
+        "resp": uname(n["responsible_user_id"]), "created": day(n["created_at"]), "budget": n["price"],
+        "company": S["companies"].get(str(comp), "") if comp else "",
+        "guests": sorted(gids), "segs": sorted({g["seg"] for g in gs}),
+        "procs": sorted({g["proc"] for g in gs}), "excluded": C.EXCLUDE_NB_COMPANY_IDS.get(comp),
+    })
+order = {s: k for k, s in enumerate(C.NB_STAGE_ORDER)}
+deals.sort(key=lambda d: (order.get(d["stage"], 99), d["name"]))
+counted = [d for d in deals if not d["excluded"]]
+
+# ---------------------------------------------------------------- цифры
+seg_cnt = Counter(g["seg"] for g in guests)
+off = [g for g in guests if g["seg"] == "off"]
+proc_off = Counter(g["proc"] for g in off)
+reasons_off = Counter((g["reason"], g["proc"]) for g in off if g["proc"] in ("manual", "auto", "active"))
+todo_stage = Counter(g["stage"] for g in off if g["proc"] == "todo")
 who = defaultdict(Counter)
-for r in linked:
-    if r["new_lead"] == "1" and r["new_lead_set_by"] not in ("-", AUTO):
-        who[r["new_lead_set_by"]]["Новый лид"] += 1
-    if r["reason"] != "-" and r["reason_set_by"] not in ("-", AUTO):
-        who[r["reason_set_by"]][r["reason"]] += 1
+for g in guests:
+    if g["who"] and g["proc"] in ("new", "active", "manual"):
+        who[g["who"]][g["proc"]] += 1
+stage_cnt = Counter(d["stage"] for d in counted)
+deals_off = [d for d in counted if "off" in d["segs"]]
+selected_off = proc_off["new"] + proc_off["active"]
+lost = sum(stage_cnt[s] for s in C.NB_LOST)
+beyond = sum(v for s, v in stage_cnt.items()
+             if s not in C.NB_LOST and order.get(s, 0) > order["Исследование"])
+budget = sum(d["budget"] for d in counted)
+gen = datetime.fromisoformat(S["generated_at"]).astimezone(MSK).strftime("%d.%m.%Y %H:%M МСК")
 
-# ---------- 3. Связь с NewBiz ----------
-groups = {
-    "Офлайн · «Новый лид»": [r for r in linked if r["segment"] == "off" and r["new_lead"] == "1"],
-    "Офлайн · «Действующий лид»": [r for r in linked if r["segment"] == "off" and r["reason"] == "Действующий лид"],
-    "Не участвовали (регистрация без визита)": [r for r in linked if r["segment"] == "none"],
-}
-group_deals = {}
-for g, rows in groups.items():
-    s = set()
-    for r in rows:
-        s.update(ids(r["nb_after_by_contact"]))
-        if g.endswith("«Новый лид»"):
-            s.update(ids(r["nb_after_by_company"]))  # 3 гостя с той же компанией, что уже перенесена
-    group_deals[g] = s
-all_conv = set().union(*group_deals.values())
 
-# Национальные приоритеты — действующий клиент DARR, сделки до конференции уже были
-np_deals = {i for i in all_conv if "ациональные" in nb[i]["name"]}
-clean_conv = all_conv - np_deals
+def conv_rows():
+    rows = []
+    for seg in ("off", "on", "none"):
+        segg = [g for g in guests if g["seg"] == seg]
+        any_deal = False
+        for proc in ("new", "active", "manual", "auto", "todo"):
+            gg = [g for g in segg if g["proc"] == proc]
+            ds = {i for g in gg for i in g["nb"] if not excluded(i)}
+            if not gg or (not ds and proc not in ("new", "active")):
+                continue
+            any_deal = any_deal or bool(ds)
+            wd = [g for g in gg if any(not excluded(i) for i in g["nb"])]
+            rows.append((f"{SEG_NAMES[seg]} · {PROC_NAMES[proc]}", len(gg), len(wd), len(ds)))
+        if not any_deal and seg != "off":
+            rows.append((f"{SEG_NAMES[seg]} · все", len(segg), 0, 0))
+    return rows
 
-stage_cnt = Counter(nb[i]["stage"] for i in clean_conv)
 
-# ---------- write ----------
+# ---------------------------------------------------------------- REPORT.md
+md = []
+w = md.append
 w("# Отработка гостей «Конференции 2026» командой NewBiz")
 w("")
-w("Дата конференции: **16.07.2026**. Срез данных из amoCRM: **17.11.2026**. "
-  "Воронки: «Конференция 2026» (id 10631686) и «NewBiz» (id 9673226).")
+w(f"_Обновлено автоматически из amoCRM: **{gen}**. Интерактивная версия — `docs/index.html`._")
 w("")
 w("## Коротко")
 w("")
-w(f"- В воронке конференции **{total}** сделок, из них офлайн-гостей (без сотрудников RoRe) — **{off_total}**. "
-  "Именно они — рабочий список NewBiz по инструкции (этап «Факт присутствия»).")
-w(f"- Разобрано **{off_total - untouched}** из {off_total} офлайн-гостей ({pct(off_total - untouched, off_total)}). "
-  f"Вручную командой NewBiz — **{manual_total}** ({took} взяты как «Новый лид», "
-  f"{active_lead} — «Действующий лид», {manual_total - took - active_lead} — отказ по другим причинам). "
-  f"Ещё **{auto_total}** закрыты массово с учётной записи «{AUTO}» (клиенты, партнёры, PR-партнёры и т.п.).")
-w(f"- **Не разобрано: {untouched}** офлайн-гостей ({pct(untouched, off_total)}) — " +
-  ("все они" if untouched_in_fact == untouched else f"{untouched_in_fact} из них") + " так и стоят на этапе «Факт присутствия» без причины отказа и без отметки «Новый лид».")
-conv_off = group_deals["Офлайн · «Новый лид»"] | group_deals["Офлайн · «Действующий лид»"]
-w(f"- В воронку NewBiz из гостей конференции перешло **{len(clean_conv)}** сделок "
-  f"(+{len(np_deals)} сделки «Национальных приоритетов» — действующего клиента DARR, их считаем отдельно). "
-  f"От офлайн-гостей — **{len(conv_off)}** сделок, это **{pct(len(conv_off), off_total)}** офлайн-аудитории.")
-past = sum(stage_cnt[s] for s in NB_PAST_RESEARCH)
-w(f"- Из {len(clean_conv)} сделок **{stage_cnt['Исследование']}** ещё на этапе «Исследование», "
-  f"**{past}** продвинулись дальше, "
-  f"**{stage_cnt['Выигрыш тендера']}** — «Выигрыш тендера», "
-  f"**{stage_cnt['Отказ'] + stage_cnt['Проигрыш']}** — отказ/проигрыш. "
-  "Онлайн-участники в NewBiz не перешли ни разу.")
+w(f"- В воронке конференции **{len(guests)}** сделок, офлайн-гостей (без сотрудников) — **{len(off)}**: "
+  "это рабочий список NewBiz.")
+w(f"- Разобрано **{len(off) - proc_off['todo']}** из {len(off)} ({pct(len(off) - proc_off['todo'], len(off))}). "
+  f"Вручную NewBiz: **{proc_off['new']}** «Новый лид», **{proc_off['active']}** «Действующий лид», "
+  f"**{proc_off['manual']}** других отказов. Массово закрыто: **{proc_off['auto']}**.")
+w(f"- **Не разобрано: {proc_off['todo']}** ({pct(proc_off['todo'], len(off))}).")
+w(f"- Сделок в NewBiz из гостей: **{len(counted)}**. От офлайн-гостей — **{len(deals_off)}**: "
+  f"{pct(len(deals_off), len(off))} офлайн-аудитории, {pct(len(deals_off), selected_off)} от отобранных NewBiz.")
+w(f"- Дальше «Исследования»: **{beyond}**, на «Исследовании»: **{stage_cnt['Исследование']}**, "
+  f"выигрыш тендера: **{stage_cnt['Выигрыш тендера']}**, контракт: **{stage_cnt['Контракт заключен']}**, "
+  f"отказ/проигрыш: **{lost}**.")
 w("")
-
-w("## 1. Кто был в воронке «Конференция 2026»")
+w("## 1. Состав воронки «Конференция 2026»")
 w("")
 w("| Сегмент | Сделок | Доля |")
 w("|---|---:|---:|")
-for k in ["off", "on", "none", "emp"]:
-    w(f"| {SEG[k]} | {seg_cnt[k]} | {pct(seg_cnt[k], total)} |")
-w(f"| **Всего** | **{total}** | 100% |")
+for k in ("off", "on", "none", "emp"):
+    w(f"| {SEG_NAMES[k]} | {seg_cnt[k]} | {pct(seg_cnt[k], len(guests))} |")
+w(f"| **Всего** | **{len(guests)}** | 100% |")
 w("")
-w("Сегмент определён по полям сделки: «Сотрудник» → сотрудники; «Участвовал офлайн» → офлайн; "
-  "«Участвовал онлайн» → онлайн; иначе — не участвовал. Этапы: "
-  + ", ".join(f"{CONF_STATUS[k]} — {status_cnt[k]}" for k in ["142", "87065186", "143"]) + ".")
+w("## 2. Отработка офлайн-гостей")
 w("")
-
-w("## 2. Как отработали офлайн-гостей")
+w("| Результат | Сделок | Доля |")
+w("|---|---:|---:|")
+w(f"| {PROC_NAMES['new']} | {proc_off['new']} | {pct(proc_off['new'], len(off))} |")
+for (r, p), v in sorted(reasons_off.items(), key=lambda x: (x[0][1] == "auto", -x[1])):
+    tag = " _(массово)_" if p == "auto" else ""
+    w(f"| Причина отказа: {r}{tag} | {v} | {pct(v, len(off))} |")
+w(f"| **Не разобраны** | **{proc_off['todo']}** | **{pct(proc_off['todo'], len(off))}** |")
 w("")
-w("```mermaid")
-w("pie showData title Офлайн-гости конференции (" + str(off_total) + ")")
-w(f'  "Взяли: Новый лид" : {took}')
-w(f'  "Действующий лид" : {active_lead}')
-w(f'  "Отказ вручную (NewBiz)" : {manual_total - took - active_lead}')
-w(f'  "Закрыты массово (клиенты/партнёры)" : {auto_total}')
-w(f'  "Не разобраны" : {untouched}')
-w("```")
-w("")
-w("| Результат | Сделок | Доля от офлайн-гостей | Кто проставил |")
-w("|---|---:|---:|---|")
-w(f"| Взяли в работу («Новый лид») | {took} | {pct(took, off_total)} | NewBiz |")
-for k, v in by_reason_manual.most_common():
-    w(f"| Причина отказа: {k} | {v} | {pct(v, off_total)} | NewBiz |")
-for k, v in by_reason_auto.most_common():
-    w(f"| Причина отказа: {k} | {v} | {pct(v, off_total)} | массово («{AUTO}») |")
-w(f"| **Не разобраны** | **{untouched}** | **{pct(untouched, off_total)}** | — |")
-w(f"| Итого | {off_total} | 100% | |")
-w("")
+if todo_stage:
+    w("Неразобранные по этапам: " + ", ".join(f"{k} — {v}" for k, v in todo_stage.most_common()) + ".")
+    w("")
 w("### Кто из NewBiz что сделал")
 w("")
 w("| Сотрудник | Новый лид | Действующий лид | Другие отказы |")
 w("|---|---:|---:|---:|")
 for p, c in sorted(who.items(), key=lambda x: -sum(x[1].values())):
-    other = sum(v for k, v in c.items() if k not in ("Новый лид", "Действующий лид"))
-    w(f"| {p} | {c['Новый лид']} | {c['Действующий лид']} | {other} |")
+    w(f"| {p} | {c['new']} | {c['active']} | {c['manual']} |")
 w("")
-w("> «Родная Речь» — общая админская учётка: с неё массово проставлены «Сотрудник», «Действующий клиент», "
-  "«Действующий партнёр», «PR-партнёр» и т.д. Это не ручная отработка NewBiz, поэтому показано отдельно.")
+w("Разметка с учёток " + ", ".join(f"«{u}»" for u in sorted(C.AUTO_USERS))
+  + " считается массовой, а не ручной работой NewBiz.")
 w("")
-w("Сотрудники RoRe (" + str(seg_cnt["emp"]) + ") и онлайн-участники в рабочий список не входили; "
-  "у онлайн-участников причины отказа проставлены только массово "
-  f"({sum(r['count'] for r in agg if r['segment'] == 'on' and r['reason'] != '-')} шт.).")
+w("## 3. Конверсия в NewBiz")
 w("")
-
-w("## 3. Что перешло в NewBiz")
+w("Сделка NewBiz связана с гостем, если она создана после конференции и у неё тот же контакт "
+  "(для гостей с «Новый лид» — или та же компания).")
 w("")
-w("Сделка NewBiz считается пришедшей с конференции, если она **создана после 16.07.2026** и у неё **тот же контакт**, "
-  "что у гостя в воронке конференции (для 3 гостей с отметкой «Новый лид» связь найдена по компании — "
-  "сделку на компанию уже завёл коллега).")
+w("| Гости | Всего | Со сделкой в NewBiz | Сделок | Конверсия |")
+w("|---|---:|---:|---:|---:|")
+for name, n, wd, ds in conv_rows():
+    w(f"| {name} | {n} | {wd} | {ds} | {pct(wd, n)} |")
 w("")
-w("| Откуда | Гостей | Сделок в NewBiz | Конверсия гость → сделка |")
-w("|---|---:|---:|---:|")
-base = {"Офлайн · «Новый лид»": took, "Офлайн · «Действующий лид»": active_lead}
-for g, rows in groups.items():
-    deals = group_deals[g] - np_deals
-    guests = [r for r in rows if (set(ids(r["nb_after_by_contact"])) | (set(ids(r["nb_after_by_company"])) if "Новый" in g else set())) - np_deals]
-    b = base.get(g, seg_cnt["none"])
-    w(f"| {g} | {len(guests)} из {b} | {len(deals)} | {pct(len(guests), b)} |")
-w(f"| Онлайн-участники | 0 из {seg_cnt['on']} | 0 | 0% |")
-w(f"| **Итого (без Нацприоритетов)** | | **{len(clean_conv)}** | |")
-w("")
-w("Конверсия от всего офлайн-потока: "
-  f"**{len(conv_off)} сделок / {off_total} гостей = {pct(len(conv_off), off_total)}**; "
-  f"от отобранных NewBiz лидов («Новый лид» + «Действующий лид» = {took + active_lead}): "
-  f"**{pct(len(conv_off), took + active_lead)}** (несколько гостей из одной компании → одна сделка).")
-w("")
-
-w("### На каком этапе сейчас")
+w("### Этапы")
 w("")
 w("| Этап NewBiz | Сделок | Доля |")
 w("|---|---:|---:|")
-for s in NB_ORDER:
+for s in C.NB_STAGE_ORDER:
     if stage_cnt[s]:
-        w(f"| {s} | {stage_cnt[s]} | {pct(stage_cnt[s], len(clean_conv))} |")
-w(f"| **Всего** | **{len(clean_conv)}** | 100% |")
+        w(f"| {s} | {stage_cnt[s]} | {pct(stage_cnt[s], len(counted))} |")
+w(f"| **Всего** | **{len(counted)}** | 100% |")
 w("")
-active = sum(stage_cnt[s] for s in NB_ACTIVE)
-budget = sum(int(nb[i]["budget"]) for i in clean_conv)
-w(f"В активной работе (не отказ/проигрыш): **{active}**. Сумма бюджетов в сделках: **{budget:,} ₽** "
-  "(у большинства сделок бюджет не заполнен).".replace(",", " "))
+w(f"Сумма бюджетов: **{budget:,} ₽**".replace(",", " ") + " (у большинства сделок бюджет не заполнен).")
 w("")
-w("```mermaid")
-w("flowchart LR")
-w(f'  A["Офлайн-гости<br/>{off_total}"] --> B["Отобраны NewBiz<br/>{took + active_lead}"]')
-w(f'  B --> C["Сделки в NewBiz<br/>{len(conv_off)}"]')
-w(f'  N["Не участвовали<br/>{seg_cnt["none"]}"] --> C2["Сделки в NewBiz<br/>{len(group_deals["Не участвовали (регистрация без визита)"] - np_deals)}"]')
-w(f'  C --> D["Дальше «Исследования»<br/>{sum(stage_cnt[s] for s in NB_PAST_RESEARCH if True) }"]')
-w("  C2 --> D")
-w(f'  D --> E["Выигрыш тендера<br/>{stage_cnt["Выигрыш тендера"]}"]')
-w("```")
+w("### Сделки")
 w("")
+w("| Сделка | Этап | Ответственный | Создана | Гости |")
+w("|---|---|---|---|---|")
+for d in deals:
+    mark = " ⚑" if d["excluded"] else ""
+    gl = ", ".join(f"[{g}]({AMO}{g})" for g in d["guests"])
+    w(f"| [{d['name']}]({AMO}{d['id']}){mark} | {d['stage']} | {d['resp']} | {d['created']} | {gl} |")
+w("")
+if any(d["excluded"] for d in deals):
+    w("⚑ — не в конверсии: " + "; ".join(sorted(set(C.EXCLUDE_NB_COMPANY_IDS.values()))) + ".")
+    w("")
+w("## Что проверить")
+w("")
+w(f"- Не разобраны: **{proc_off['todo']}** офлайн-гостей.")
+al_none = [g for g in off if g["proc"] == "active" and not g["nb"] and not g["nb_before"]]
+if al_none:
+    w("- «Действующий лид», но сделки в NewBiz нет ни до, ни после конференции: "
+      + ", ".join(f"[{g['id']}]({AMO}{g['id']})" for g in al_none) + ".")
+new_none = [g for g in off if g["proc"] == "new" and not g["nb"]]
+if new_none:
+    w("- «Новый лид», но сделка в NewBiz не найдена: "
+      + ", ".join(f"[{g['id']}]({AMO}{g['id']})" for g in new_none) + ".")
+unmarked = [g for g in guests if g["seg"] != "emp" and g["proc"] in ("todo", "auto")
+            and any(not excluded(i) for i in g["nb"])]
+if unmarked:
+    w(f"- Гости со сделкой в NewBiz, но без отметки «Новый лид»/«Действующий лид»: **{len(unmarked)}** — "
+      + ", ".join(f"[{g['id']}]({AMO}{g['id']})" for g in unmarked) + ".")
+w("")
+w("---")
+w("Обновляется GitHub Actions раз в сутки и по кнопке *Run workflow*: "
+  "`scripts/fetch_amo.py` → `scripts/build_report.py`. Настройки — `scripts/config.py`.")
+(ROOT / "REPORT.md").write_text("\n".join(md) + "\n", encoding="utf-8")
 
-w("### Список сделок")
-w("")
-w("| Сделка NewBiz | Этап | Ответственный | Создана | Источник | Гость(и) в «Конференции 2026» |")
-w("|---|---|---|---|---|---|")
-src = defaultdict(list)
-for g, rows in groups.items():
-    for r in rows:
-        for i in ids(r["nb_after_by_contact"]) + (ids(r["nb_after_by_company"]) if "Новый" in g else []):
-            if i in all_conv:
-                src[i].append((g, r["conf_lead_id"]))
-for i in sorted(all_conv, key=lambda x: (NB_ORDER.index(nb[x]["stage"]), nb[x]["name"])):
-    d = nb[i]
-    gs = sorted({g for g, _ in src[i]})
-    cl = ", ".join(link(c) for c in sorted({c for _, c in src[i]}))
-    mark = " ⚑" if i in np_deals else ""
-    w(f"| [{d['name']}]({AMO}{i}){mark} | {d['stage']} | {d['responsible']} | {d['created_at']} | {'; '.join(gs)} | {cl} |")
-w("")
-w("⚑ — «Национальные приоритеты»: действующий клиент DARR, сделки в NewBiz были и до конференции; в конверсию не включены.")
-w("")
-
-w("## 4. Что требует внимания")
-w("")
-w(f"1. **{untouched} офлайн-гостей не разобраны** — нет ни причины отказа, ни «Новый лид». "
-  "Это остаток в рабочей ссылке; без разметки по ним не посчитать конверсию.")
-no_nb_new = [r for r in groups["Офлайн · «Новый лид»"] if not ids(r["nb_after_by_contact"]) and not ids(r["nb_after_by_company"])]
-no_nb_al = [r for r in groups["Офлайн · «Действующий лид»"] if not ids(r["nb_after_by_contact"])]
-no_prior = [r for r in no_nb_al if not ids(r["nb_before_by_contact"])]
-w(f"2. **{len(no_nb_al)} гостей с причиной «Действующий лид» без новой сделки в NewBiz.** "
-  f"У {len(no_nb_al) - len(no_prior)} из них сделка в NewBiz была ещё до конференции — это по инструкции. "
-  f"У {len(no_prior)} сделки нет ни до, ни после — стоит проверить: "
-  + ", ".join(link(r["conf_lead_id"]) for r in no_prior) + ".")
-nonpart = [r for r in groups['Не участвовали (регистрация без визита)'] if set(ids(r["nb_after_by_contact"])) - np_deals]
-w(f"3. **{len(nonpart)} зарегистрировавшихся, но не пришедших гостей** "
-  "дали сделки в NewBiz, но в воронке конференции они никак не помечены — их не видно в отчёте по «Новый лид». "
-  "У 3 из 4 компаний сделки в NewBiz были и до конференции. Стоит договориться, отмечать ли таких гостей.")
-w("4. Большинство сделок (" + str(stage_cnt["Исследование"]) + ") стоят на «Исследовании» с названием «Скоуп?» — "
-  "через месяц имеет смысл повторить срез, чтобы увидеть реальную конверсию в «Таргет» и дальше.")
-w("")
-
-w("## Методика")
-w("")
-w("- Данные выгружены из amoCRM API v4 (сделки обеих воронок с контактами и компаниями + события изменения полей "
-  "«Причина отказа», «Новый лид»). Кто проставил поле — по последнему событию изменения.")
-w("- `data/conf_aggregate.csv` — все 3 792 сделки воронки конференции, сгруппированные по признакам; "
-  "`data/conf_leads_linked.csv` — гости, у которых есть ручная разметка или связанная сделка NewBiz; "
-  "`data/newbiz_linked_deals.csv` — сделки NewBiz, связанные с гостями (включая связь только по компании, "
-  "она в конверсию не входит — см. приложение).")
-w("- Пересобрать отчёт: `python3 scripts/build_report.py`.")
-w("")
-w("## Приложение. Сделки NewBiz с компаниями-гостями (связь только по компании)")
-w("")
-w("Эти сделки заведены после конференции на компании, сотрудники которых были в воронке конференции, "
-  "но контакт в сделке другой. Прямой связи с отработкой гостей нет, в конверсию не включены.")
-w("")
-w("| Сделка | Этап | Ответственный | Создана |")
-w("|---|---|---|---|")
-for i, d in sorted(nb.items(), key=lambda x: (NB_ORDER.index(x[1]["stage"]), x[1]["name"])):
-    if d["link"] == "company_only" and i not in all_conv:
-        w(f"| [{d['name']}]({AMO}{i}) | {d['stage']} | {d['responsible']} | {d['created_at']} |")
-w("")
-
-(ROOT / "REPORT.md").write_text("\n".join(out), encoding="utf-8")
-print("ok", len(clean_conv), stage_cnt)
+# ---------------------------------------------------------------- docs/index.html
+payload = {
+    "generated": gen, "amo": AMO, "segNames": SEG_NAMES, "procNames": PROC_NAMES,
+    "stageOrder": C.NB_STAGE_ORDER, "lost": sorted(C.NB_LOST),
+    "guests": [[g["id"], g["seg"], g["proc"], g["reason"] or "", g["who"] or "",
+                [i for i in g["nb"] if not excluded(i)]] for g in guests],
+    "deals": deals,
+}
+tpl = (ROOT / "scripts" / "template.html").read_text(encoding="utf-8")
+data = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+html = tpl.replace("/*__DATA__*/null", data)
+(ROOT / "docs").mkdir(exist_ok=True)
+(ROOT / "docs" / "index.html").write_text(html, encoding="utf-8")
+print(f"OK: гостей {len(guests)}, офлайн {len(off)}, сделок {len(counted)} (+{len(deals) - len(counted)} искл.)")
